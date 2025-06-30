@@ -1,0 +1,110 @@
+.container {
+  .manager__header-top {
+    font-size: 1.2rem;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ededed;
+    padding: 6px 15px;
+
+    .manager__header-email {
+      display: flex;
+      align-items: center;
+
+      span {
+        margin: 0 6px;
+        color: #9d9c9c;
+      }
+
+      i {
+        font-size: 1.2rem;
+        margin-right: 5px;
+      }
+    }
+
+    .manager__header-owner {
+      display: flex;
+      align-items: center;
+      gap: 50px;
+
+      .button-login {
+        color: var(--text-color);
+        font-size: 1.2rem;
+        font-weight: 500;
+        padding: 0;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        margin-left: 20px;
+
+        &:hover {
+          color: var(--primary);
+        }
+      }
+
+      span {
+        font-weight: 600;
+        &:hover {
+          color: #6a59e6;
+        }
+      }
+
+      .manager__header-account {
+        font-weight: 600;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1;
+      }
+    }
+  }
+
+  .manager__header-menu {
+    display: flex;
+    justify-content: center;
+    background: var(--primary);
+
+    .ant-menu {
+      display: flex !important;
+      justify-content: center;
+      padding: 0;
+      background: transparent;
+
+      > .ant-menu-item,
+      > .ant-menu-submenu {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 0 50px !important;
+        height: 40px;
+        font-weight: 600;
+
+        &:hover {
+          color: #020f5a;
+          background: #c8e5f9;
+          border-radius: 2px;
+          transform: translateY(-1px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+      }
+
+      .ant-menu-item,
+      .ant-menu-submenu-title {
+        color: #fff;
+
+        &:hover {
+          color: #020f5a;
+        }
+      }
+
+      .ant-menu-item-selected {
+        color: #020f5a;
+        background: #d4e8f6;
+        border-radius: 2px;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+}
