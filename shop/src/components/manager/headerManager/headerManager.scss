@@ -100,10 +100,21 @@
 
       .ant-menu-item-selected {
         color: #020f5a;
-        background: #d4e8f6;
+        background: #c8e5f9;
         border-radius: 2px;
         transform: translateY(-1px);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      }
+
+      .ant-menu-submenu-selected {
+        background: #c8e5f9 !important;
+        border-radius: 2px;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+        .ant-menu-submenu-title{
+          color: #020f5a;
+        }
       }
     }
   }

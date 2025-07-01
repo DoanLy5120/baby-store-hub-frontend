@@ -503,7 +503,6 @@ function Selling() {
                           <Space direction="horizontal">
                             <Radio value="cash">Tiền mặt</Radio>
                             <Radio value="bank">Chuyển khoản</Radio>
-                            <Radio value="qr">Quét mã QR</Radio>
                           </Space>
                         </Radio.Group>
                       </Col>
