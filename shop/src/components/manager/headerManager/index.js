@@ -154,9 +154,9 @@ function HeaderManager() {
   //chuyển tab
   const location = useLocation();
   const currentPath = location.pathname.replace(/^\/|\/$/g, "");
-  const [current, setCurrent] = useState(currentPath);
+  const [current, setCurrent] = useState([currentPath]);
   const onClick = (e) => {
-    setCurrent(e.key);
+    setCurrent(e.keyPath);
     navigate(`/${e.key}/`);
   };
 
@@ -210,7 +210,7 @@ function HeaderManager() {
       <div className="manager__header-menu">
         <Menu
           onClick={onClick}
-          selectedKeys={[current]}
+          selectedKeys={current}
           mode="horizontal"
           items={navbarManager}
         />
