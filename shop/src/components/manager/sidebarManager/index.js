@@ -1,4 +1,6 @@
 import { Menu } from "antd";
+import "./sidebar.scss"
+
 
 function SidebarManager({
   items,

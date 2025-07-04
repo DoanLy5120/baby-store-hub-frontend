@@ -8,8 +8,8 @@ import {
   Modal,
   Form,
   Card,
-  Tag,
   Space,
+  notification,
   message,
   Popconfirm,
   Layout,
@@ -17,7 +17,6 @@ import {
   Col,
   Select,
   InputNumber,
-
 } from "antd";
 import {
   SearchOutlined,
@@ -26,15 +25,12 @@ import {
   DeleteOutlined,
   PrinterOutlined,
   CalendarOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  ExclamationCircleOutlined,
   UserOutlined,
   ShoppingCartOutlined,
 } from "@ant-design/icons";
 import "antd/dist/reset.css";
 import { IoIosCash } from "react-icons/io";
+import { FaReplyAll } from "react-icons/fa";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { useWatch } from "antd/es/form/Form";
@@ -52,8 +48,9 @@ const sampleInvoices = [
     customerPhone: "0123456789",
     customerAddress: "123 Đường ABC, Quận 1, TP.HCM",
     discount: 0,
-    totalAmount: 70000,
+    totalAmount: 77000,
     createdAt: "30/06/2025 10:31",
+    paymentMethod: "cash",
     status: "completed",
     items: [
       {
@@ -61,7 +58,8 @@ const sampleInvoices = [
         productName: "Sản phẩm A",
         quantity: 2,
         unitPrice: 35000,
-        total: 70000,
+        vat: 0.1,
+        total: 77000,
       },
     ],
     notes: "Giao hàng tận nơi",
@@ -72,9 +70,10 @@ const sampleInvoices = [
     customer: "Anh Giang - Kim Mã",
     customerPhone: "0987654321",
     customerAddress: "456 Kim Mã, Ba Đình, Hà Nội",
-    discount: 5000,
-    totalAmount: 35000,
+    discount: 4000,
+    totalAmount: 40000,
     createdAt: "28/06/2025 08:56",
+    paymentMethod: "transfer",
     status: "processing",
     items: [
       {
@@ -82,7 +81,8 @@ const sampleInvoices = [
         productName: "Sản phẩm B",
         quantity: 1,
         unitPrice: 40000,
-        total: 40000,
+        vat: 0.1,
+        total: 44000,
       },
     ],
   },
@@ -95,6 +95,7 @@ const sampleInvoices = [
     discount: 0,
     totalAmount: 0,
     createdAt: "27/06/2025 08:55",
+    paymentMethod: "transfer",
     status: "cancelled",
     items: [],
   },
@@ -105,8 +106,9 @@ const sampleInvoices = [
     customerPhone: "0912345678",
     customerAddress: "321 Cộng Hòa, Tân Bình, TP.HCM",
     discount: 10000,
-    totalAmount: 90000,
+    totalAmount: 100000,
     createdAt: "26/06/2025 14:22",
+    paymentMethod: "cash",
     status: "completed",
     items: [
       {
@@ -114,14 +116,16 @@ const sampleInvoices = [
         productName: "Sản phẩm C",
         quantity: 3,
         unitPrice: 30000,
-        total: 90000,
+        vat: 0.1,
+        total: 99000,
       },
       {
         id: "2",
         productName: "Sản phẩm D",
         quantity: 1,
         unitPrice: 10000,
-        total: 10000,
+        vat: 0.1,
+        total: 11000,
       },
     ],
     notes: "Khách hàng VIP",
@@ -133,8 +137,9 @@ const sampleInvoices = [
     customerPhone: "0987123456",
     customerAddress: "654 Láng Hạ, Đống Đa, Hà Nội",
     discount: 0,
-    totalAmount: 150000,
+    totalAmount: 165000,
     createdAt: "25/06/2025 09:15",
+    paymentMethod: "cash",
     status: "processing",
     items: [
       {
@@ -142,30 +147,12 @@ const sampleInvoices = [
         productName: "Sản phẩm E",
         quantity: 5,
         unitPrice: 30000,
-        total: 150000,
+        vat: 0.1,
+        total: 165000,
       },
     ],
   },
 ];
-
-const statusConfig = {
-  processing: {
-    label: "Đang xử lý",
-    color: "orange",
-    icon: <ClockCircleOutlined />,
-  },
-  completed: {
-    label: "Hoàn thành",
-    color: "green",
-    icon: <CheckCircleOutlined />,
-  },
-  cancelled: { label: "Đã hủy", color: "red", icon: <CloseCircleOutlined /> },
-  pending: {
-    label: "Chờ xử lý",
-    color: "blue",
-    icon: <ExclamationCircleOutlined />,
-  },
-};
 
 export default function Bill() {
   const [invoices, setInvoices] = useState(sampleInvoices);
@@ -174,6 +161,7 @@ export default function Bill() {
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
   const [filteredInvoices, setFilteredInvoices] = useState(sampleInvoices);
+  const [api, contextHolder] = notification.useNotification();
 
   //chuyển trang khi thêm hóa đơn
   const navigate = useNavigate();
@@ -201,7 +189,10 @@ export default function Bill() {
     setSelectedInvoice(invoice);
     form.setFieldsValue({
       ...invoice,
-      items: invoice.items || [],
+      items: invoice.items.map((item) => ({
+        ...item,
+        vat: item.vat ?? 0, // Nếu vat chưa có thì set 0
+      })),
     });
     setIsModalOpen(true);
   };
@@ -228,6 +219,12 @@ export default function Bill() {
       setIsModalOpen(false);
       setSelectedInvoice(null);
       form.resetFields();
+      setTimeout(() => {
+        api.success({
+          message: "Cập nhật thành công",
+          placement: "topRight",
+        });
+      }, 300);
     } catch (error) {
       message.error("Vui lòng kiểm tra lại thông tin!");
     }
@@ -245,15 +242,25 @@ export default function Bill() {
       setIsModalOpen(false);
       setSelectedInvoice(null);
       form.resetFields();
-      message.success("Xóa hóa đơn thành công!");
+      setTimeout(() => {
+        api.success({
+          message: "Đã xóa thành công",
+          placement: "topRight",
+        });
+      }, 300);
     }
   };
 
   //in hóa đơn
   const handlePrintInvoice = () => {
-    if (selectedInvoice) {
-      window.print();
-      message.info("Đang in hóa đơn...");
+    const printSection = document.getElementById("print-invoice");
+    if (printSection) {
+      printSection.style.display = "block";
+
+      setTimeout(() => {
+        window.print();
+        printSection.style.display = "none";
+      }, 100); // Đợi 1 chút để trình duyệt render xong rồi mới in
     }
   };
 
@@ -293,18 +300,19 @@ export default function Bill() {
       key: "createdAt",
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => (
-        <Tag
-          color={statusConfig[status].color}
-          icon={statusConfig[status].icon}
-          className={`status-${status}`}
-        >
-          {statusConfig[status].label}
-        </Tag>
-      ),
+      title: "Phương thức thanh toán",
+      dataIndex: "paymentMethod",
+      key: "paymentMethod",
+      render: (method) => {
+        switch (method) {
+          case "cash":
+            return "Tiền mặt";
+          case "transfer":
+            return "Chuyển khoản";
+          default:
+            return "Không xác định";
+        }
+      },
     },
     {
       title: "Thao tác",
@@ -344,29 +352,6 @@ export default function Bill() {
           key: "last-month",
           label: "Tháng trước",
           icon: <CalendarOutlined />,
-        },
-      ],
-    },
-    {
-      key: "status",
-      label: "Trạng thái",
-      icon: <ClockCircleOutlined />,
-      children: [
-        {
-          key: "processing",
-          label: "Đang xử lý",
-          icon: <ClockCircleOutlined />,
-        },
-        {
-          key: "completed",
-          label: "Hoàn thành",
-          icon: <CheckCircleOutlined />,
-        },
-        { key: "cancelled", label: "Đã hủy", icon: <CloseCircleOutlined /> },
-        {
-          key: "pending",
-          label: "Chờ xử lý",
-          icon: <ExclamationCircleOutlined />,
         },
       ],
     },
@@ -459,354 +444,481 @@ export default function Bill() {
     filterInvoicesByDate(fromDate, toDate);
   };
 
-  //lọc theo trạng thái
-  const handleStatusFilter = (statusKey) => {
-    const filtered = invoices.filter((invoice) => invoice.status === statusKey);
 
-    console.log(`Lọc trạng thái: ${statusKey}, kết quả:`, filtered.length);
+  //lọc theo phương thức thanh toán
+  const handleMethodFilter = (methodKey) => {
+    const filtered = invoices.filter(
+      (invoice) => invoice.paymentMethod === methodKey
+    );
+
+    console.log(
+      `Lọc theo phương thức thanh toán: ${methodKey}, kết quả:`,
+      filtered.length
+    );
     setFilteredInvoices(filtered);
 
+    const methodLabel = methodKey === "cash" ? "Tiền mặt" : "Chuyển khoản";
     message.success(
-      `Đã lọc ${filtered.length} hóa đơn theo trạng thái "${statusConfig[statusKey].label}"`
+      `Đã lọc ${filtered.length} hóa đơn theo phương thức "${methodLabel}"`
+    );
+  };
+
+  // Khối in hóa đơn riêng biệt
+  const renderPrintableInvoice = () => {
+    if (!selectedInvoice) return null;
+
+    return (
+      <div id="print-invoice" style={{ display: "none" }}>
+        <h2 className="section-title">Chi tiết hóa đơn - {selectedInvoice.invoiceCode}</h2>
+        <p>Khách hàng: {selectedInvoice.customer}</p>
+        <p>SĐT: {selectedInvoice.customerPhone}</p>
+
+        <h3>Chi tiết sản phẩm</h3>
+        <table
+          border="1"
+          cellPadding="8"
+          style={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <thead>
+            <tr>
+              <th>Tên sản phẩm</th>
+              <th>Số lượng</th>
+              <th>Đơn giá</th>
+              <th>VAT</th>
+              <th>Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            {selectedInvoice.items.map((item, index) => (
+              <tr key={index}>
+                <td>{item.productName}</td>
+                <td>{item.quantity}</td>
+                <td>{item.unitPrice.toLocaleString("vi-VN")}₫</td>
+                <td>{(item.vat * 100).toFixed(0)}%</td>
+                <td>{item.total.toLocaleString("vi-VN")}₫</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <p style={{ marginTop: 16 }}>
+          Giảm giá: {selectedInvoice.discount.toLocaleString("vi-VN")}₫
+        </p>
+        <h3 className="total">
+          Tổng tiền: {selectedInvoice.totalAmount.toLocaleString("vi-VN")}₫
+        </h3>
+
+        <div className="signature">
+          <p>Người lập hóa đơn: ________________________</p>
+        </div>
+      </div>
     );
   };
 
   return (
-    <ManagerLayoutSidebar
-      sidebarItems={sidebarItems}
-      onSidebarClick={({ key, keyPath }) => {
-        if (keyPath.includes("time")) {
-          handleTimeFilter(key);
-        } else if (keyPath.includes("status")) {
-          handleStatusFilter(key);
-        } else {
-          setFilteredInvoices(invoices);
-        }
-      }}
-    >
-      <div className="bill-page">
-        <Header className="bill__header">
-          <div className="bill__header-left">
-            <Input
-              className="search-input"
-              placeholder="Theo mã hóa đơn"
-              prefix={<SearchOutlined />}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="bill__header-action">
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddNewInvoice}
-            >
-              Thêm mới
-            </Button>
-          </div>
-        </Header>
+    <>
+      {renderPrintableInvoice()}
+      {contextHolder}
+      <ManagerLayoutSidebar
+        title="HÓA ĐƠN"
+        sidebarItems={sidebarItems}
+        onSidebarClick={({ key, keyPath }) => {
+          if (keyPath.includes("time")) {
+            handleTimeFilter(key);
+          } else if (keyPath.includes("method")) {
+            handleMethodFilter(key);
+          } else {
+            setFilteredInvoices(invoices);
+          }
+        }}
+      >
+        <div className="bill-page">
+          <Header className="bill__header">
+            <div className="bill__header-left">
+              <Input
+                className="search-input"
+                placeholder="Theo mã hóa đơn"
+                prefix={<SearchOutlined />}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="bill__header-action">
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<FaReplyAll />}
+                  onClick={() => setFilteredInvoices(invoices)}
+                >
+                  Tất cả
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddNewInvoice}
+                >
+                  Thêm mới
+                </Button>
+              </Space>
+            </div>
+          </Header>
 
-        <Content className="bill__content">
-          <Card
+          <Content className="bill__content">
+            <Card
+              title={
+                <Space>
+                  <ShoppingCartOutlined />
+                  <span>
+                    Danh sách hóa đơn ({filteredInvoices.length} hóa đơn)
+                  </span>
+                </Space>
+              }
+            >
+              <Table
+                className="bill__content-table"
+                columns={columns}
+                dataSource={searchedInvoices}
+                rowKey="id"
+                pagination={{
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) =>
+                    `Hiển thị ${range[0]}-${range[1]} của ${total} hóa đơn`,
+                }}
+                locale={{
+                  emptyText: (
+                    <div className="empty-state">
+                      <div className="empty-icon">
+                        <ShoppingCartOutlined />
+                      </div>
+                      <div>Không tìm thấy hóa đơn nào</div>
+                    </div>
+                  ),
+                }}
+              />
+            </Card>
+          </Content>
+
+          <Modal
             title={
               <Space>
-                <ShoppingCartOutlined />
-                <span>
-                  Danh sách hóa đơn ({filteredInvoices.length} hóa đơn)
-                </span>
+                <EditOutlined />
+                {selectedInvoice &&
+                invoices.find((inv) => inv.id === selectedInvoice.id)
+                  ? `Chi tiết hóa đơn - ${selectedInvoice?.invoiceCode}`
+                  : "Tạo hóa đơn mới"}
               </Space>
             }
-          >
-            <Table
-              className="bill__content-table"
-              columns={columns}
-              dataSource={searchedInvoices}
-              rowKey="id"
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `Hiển thị ${range[0]}-${range[1]} của ${total} hóa đơn`,
-              }}
-              locale={{
-                emptyText: (
-                  <div className="empty-state">
-                    <div className="empty-icon">
-                      <ShoppingCartOutlined />
-                    </div>
-                    <div>Không tìm thấy hóa đơn nào</div>
-                  </div>
-                ),
-              }}
-            />
-          </Card>
-        </Content>
-
-        <Modal
-          title={
-            <Space>
-              <EditOutlined />
-              {selectedInvoice &&
-              invoices.find((inv) => inv.id === selectedInvoice.id)
-                ? `Chi tiết hóa đơn - ${selectedInvoice?.invoiceCode}`
-                : "Tạo hóa đơn mới"}
-            </Space>
-          }
-          open={isModalOpen}
-          onCancel={() => {
-            setIsModalOpen(false);
-            setSelectedInvoice(null);
-            form.resetFields();
-          }}
-          width={700}
-          className="invoice-modal"
-          footer={[
-            <Button key="cancel" onClick={() => setIsModalOpen(false)}>
-              Hủy
-            </Button>,
-            <Button
-              key="print"
-              icon={<PrinterOutlined />}
-              onClick={handlePrintInvoice}
-              disabled={
-                !selectedInvoice ||
-                !invoices.find((inv) => inv.id === selectedInvoice.id)
-              }
-            >
-              In
-            </Button>,
-            <Popconfirm
-              key="delete"
-              title="Bạn có chắc chắn muốn xóa hóa đơn này?"
-              onConfirm={handleDeleteInvoice}
-              disabled={
-                !selectedInvoice ||
-                !invoices.find((inv) => inv.id === selectedInvoice.id)
-              }
-            >
+            open={isModalOpen}
+            onCancel={() => {
+              setIsModalOpen(false);
+              setSelectedInvoice(null);
+              form.resetFields();
+            }}
+            width={700}
+            className="invoice-modal"
+            footer={[
+              <Button key="cancel" onClick={() => setIsModalOpen(false)}>
+                Hủy
+              </Button>,
               <Button
-                danger
-                icon={<DeleteOutlined />}
+                key="print"
+                icon={<PrinterOutlined />}
+                onClick={handlePrintInvoice}
                 disabled={
                   !selectedInvoice ||
                   !invoices.find((inv) => inv.id === selectedInvoice.id)
                 }
               >
-                Xóa
-              </Button>
-            </Popconfirm>,
-            <Button key="save" type="primary" onClick={handleSaveInvoice}>
-              {selectedInvoice &&
-              invoices.find((inv) => inv.id === selectedInvoice.id)
-                ? "Cập nhật"
-                : "Tạo mới"}
-            </Button>,
-          ]}
-        >
-          <Form form={form} layout="vertical">
-            <div className="bill__detail">
-              <div className="bill__detail-title">Thông tin hóa đơn</div>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Mã hóa đơn"
-                    name="invoiceCode"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập mã hóa đơn!" },
-                    ]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="Khách hàng"
-                    name="customer"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập tên khách hàng!",
-                      },
-                    ]}
-                  >
-                    <Input placeholder="Tên khách hàng" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Số điện thoại" name="customerPhone">
-                    <Input placeholder="Số điện thoại khách hàng" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Trạng thái" name="status">
-                    <Select>
-                      <Option value="processing">Đang xử lý</Option>
-                      <Option value="completed">Hoàn thành</Option>
-                      <Option value="cancelled">Đã hủy</Option>
-                      <Option value="pending">Chờ xử lý</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={24}>
-                  <Form.Item label="Địa chỉ" name="customerAddress">
-                    <Input.TextArea placeholder="Địa chỉ khách hàng" rows={2} />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </div>
-
-            <div className="bill__modal">
-              <Form.List name="items">
-                {(fields, { add, remove }) => (
-                  <>
-                    <Table
-                      dataSource={fields}
-                      rowKey="key"
-                      pagination={false}
-                      size="small"
-                      bordered
-                      columns={[
+                In
+              </Button>,
+              <Popconfirm
+                key="delete"
+                title="Bạn có chắc chắn muốn xóa hóa đơn này?"
+                onConfirm={handleDeleteInvoice}
+                disabled={
+                  !selectedInvoice ||
+                  !invoices.find((inv) => inv.id === selectedInvoice.id)
+                }
+              >
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled={
+                    !selectedInvoice ||
+                    !invoices.find((inv) => inv.id === selectedInvoice.id)
+                  }
+                >
+                  Xóa
+                </Button>
+              </Popconfirm>,
+              <Button key="save" type="primary" onClick={handleSaveInvoice}>
+                {selectedInvoice &&
+                invoices.find((inv) => inv.id === selectedInvoice.id)
+                  ? "Cập nhật"
+                  : "Tạo mới"}
+              </Button>,
+            ]}
+          >
+            <Form form={form} layout="vertical">
+              <div className="bill__detail">
+                <div className="bill__detail-title">Thông tin hóa đơn</div>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      label="Mã hóa đơn"
+                      name="invoiceCode"
+                      rules={[
                         {
-                          title: "Tên sản phẩm",
-                          dataIndex: "productName",
-                          render: (_, record, index) => (
-                            <Form.Item
-                              name={[record.name, "productName"]}
-                              rules={[{ required: true, message: "Nhập tên!" }]}
-                              noStyle
-                            >
-                              <Input placeholder="Tên sản phẩm" />
-                            </Form.Item>
-                          ),
-                        },
-                        {
-                          title: "Số lượng",
-                          dataIndex: "quantity",
-                          render: (_, record) => (
-                            <Form.Item
-                              name={[record.name, "quantity"]}
-                              rules={[
-                                { required: true, message: "Nhập số lượng!" },
-                              ]}
-                              noStyle
-                            >
-                              <InputNumber
-                                min={0}
-                                onChange={(val) => {
-                                  const items = form.getFieldValue("items");
-                                  const unitPrice =
-                                    items[record.name]?.unitPrice || 0;
-                                  form.setFieldValue(
-                                    ["items", record.name, "total"],
-                                    val * unitPrice
-                                  );
-                                }}
-                              />
-                            </Form.Item>
-                          ),
-                        },
-                        {
-                          title: "Đơn giá",
-                          dataIndex: "unitPrice",
-                          render: (_, record) => (
-                            <Form.Item
-                              name={[record.name, "unitPrice"]}
-                              rules={[
-                                { required: true, message: "Nhập đơn giá!" },
-                              ]}
-                              noStyle
-                            >
-                              <InputNumber
-                                min={0}
-                                onChange={(val) => {
-                                  const items = form.getFieldValue("items");
-                                  const quantity =
-                                    items[record.name]?.quantity || 0;
-                                  form.setFieldValue(
-                                    ["items", record.name, "total"],
-                                    val * quantity
-                                  );
-                                }}
-                              />
-                            </Form.Item>
-                          ),
-                        },
-                        {
-                          title: "Thành tiền",
-                          dataIndex: "total",
-                          render: (_, record) => (
-                            <Form.Item name={[record.name, "total"]} noStyle>
-                              <InputNumber disabled />
-                            </Form.Item>
-                          ),
-                        },
-                        {
-                          title: "Xóa",
-                          render: (_, record) => (
-                            <Button
-                              danger
-                              type="text"
-                              icon={<DeleteOutlined />}
-                              onClick={() => remove(record.name)}
-                            />
-                          ),
+                          required: true,
+                          message: "Vui lòng nhập mã hóa đơn!",
                         },
                       ]}
-                    />
-                    <Button
-                      block
-                      icon={<PlusOutlined />}
-                      type="dashed"
-                      style={{ marginTop: 12 }}
-                      onClick={() =>
-                        add({
-                          id: Date.now().toString(),
-                          productName: "",
-                          quantity: 1,
-                          unitPrice: 0,
-                          total: 0,
-                        })
-                      }
                     >
-                      Thêm sản phẩm
-                    </Button>
-                  </>
-                )}
-              </Form.List>
-            </div>
+                      <Input />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      label="Khách hàng"
+                      name="customer"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Vui lòng nhập tên khách hàng!",
+                        },
+                      ]}
+                    >
+                      <Input placeholder="Tên khách hàng" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label="Số điện thoại" name="customerPhone">
+                      <Input placeholder="Số điện thoại khách hàng" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label="Trạng thái" name="status">
+                      <Select>
+                        <Option value="processing">Đang xử lý</Option>
+                        <Option value="completed">Hoàn thành</Option>
+                        <Option value="cancelled">Đã hủy</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={24}>
+                    <Form.Item
+                      label="Phương thức thanh toán"
+                      name="paymentMethod"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Vui lòng chọn phương thức thanh toán!",
+                        },
+                      ]}
+                    >
+                      <Select placeholder="Chọn phương thức">
+                        <Option value="cash">Tiền mặt</Option>
+                        <Option value="transfer">Chuyển khoản</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
 
-            <div className="bill__modal">
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="Giảm giá" name="discount">
-                    <InputNumber
-                      min={0}
-                      style={{ width: "100%" }}
-                      formatter={(value) =>
-                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Thành tiền">
-                    <div className="total-amount">
-                      {calculatedTotal.toLocaleString("vi-VN")}đ
-                    </div>
-                  </Form.Item>
-                </Col>
-                <Col span={24}>
-                  <Form.Item label="Ghi chú" name="notes">
-                    <Input.TextArea placeholder="Ghi chú thêm..." rows={3} />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </div>
-          </Form>
-        </Modal>
-      </div>
-    </ManagerLayoutSidebar>
+              <div className="bill__modal">
+                <Form.List name="items">
+                  {(fields, { add, remove }) => (
+                    <>
+                      <Table
+                        dataSource={fields}
+                        rowKey="key"
+                        pagination={false}
+                        size="small"
+                        bordered
+                        columns={[
+                          {
+                            title: "Tên sản phẩm",
+                            dataIndex: "productName",
+                            render: (_, record, index) => (
+                              <Form.Item
+                                name={[record.name, "productName"]}
+                                rules={[
+                                  { required: true, message: "Nhập tên!" },
+                                ]}
+                                noStyle
+                              >
+                                <Input placeholder="Tên sản phẩm" />
+                              </Form.Item>
+                            ),
+                          },
+                          {
+                            title: "Số lượng",
+                            dataIndex: "quantity",
+                            render: (_, record) => (
+                              <Form.Item
+                                name={[record.name, "quantity"]}
+                                rules={[
+                                  { required: true, message: "Nhập số lượng!" },
+                                ]}
+                                noStyle
+                              >
+                                <InputNumber
+                                  min={0}
+                                  onChange={(val) => {
+                                    const items = form.getFieldValue("items");
+                                    const unitPrice =
+                                      items[record.name]?.unitPrice || 0;
+                                    const vat = items[record.name]?.vat || 0;
+                                    const total = val * unitPrice * (1 + vat);
+                                    form.setFieldValue(
+                                      ["items", record.name, "total"],
+                                      total
+                                    );
+                                  }}
+                                />
+                              </Form.Item>
+                            ),
+                          },
+                          {
+                            title: "Đơn giá",
+                            dataIndex: "unitPrice",
+                            render: (_, record) => (
+                              <Form.Item
+                                name={[record.name, "unitPrice"]}
+                                rules={[
+                                  { required: true, message: "Nhập đơn giá!" },
+                                ]}
+                                noStyle
+                              >
+                                <InputNumber
+                                  min={0}
+                                  onChange={(val) => {
+                                    const items = form.getFieldValue("items");
+                                    const quantity =
+                                      items[record.name]?.quantity || 0;
+                                    const vat = items[record.name]?.vat || 0;
+                                    const total = val * quantity * (1 + vat);
+                                    form.setFieldValue(
+                                      ["items", record.name, "total"],
+                                      total
+                                    );
+                                  }}
+                                />
+                              </Form.Item>
+                            ),
+                          },
+                          {
+                            title: "Thuế VAT",
+                            dataIndex: "vat",
+                            render: (_, record) => (
+                              <Form.Item name={[record.name, "vat"]} noStyle>
+                                <InputNumber
+                                  min={0}
+                                  max={1}
+                                  step={0.01}
+                                  formatter={(value) =>
+                                    `${(parseFloat(value || 0) * 100).toFixed(
+                                      0
+                                    )}%`
+                                  }
+                                  parser={(value) =>
+                                    parseFloat(value.replace("%", "")) / 100
+                                  }
+                                  onChange={(val) => {
+                                    const items = form.getFieldValue("items");
+                                    const quantity =
+                                      items[record.name]?.quantity || 0;
+                                    const unitPrice =
+                                      items[record.name]?.unitPrice || 0;
+                                    const total =
+                                      quantity * unitPrice * (1 + val);
+                                    form.setFieldValue(
+                                      ["items", record.name, "total"],
+                                      total
+                                    );
+                                  }}
+                                />
+                              </Form.Item>
+                            ),
+                          },
+                          {
+                            title: "Thành tiền",
+                            dataIndex: "total",
+                            render: (_, record) => (
+                              <Form.Item name={[record.name, "total"]} noStyle>
+                                <InputNumber disabled />
+                              </Form.Item>
+                            ),
+                          },
+                          {
+                            title: "Xóa",
+                            render: (_, record) => (
+                              <Button
+                                danger
+                                type="text"
+                                icon={<DeleteOutlined />}
+                                onClick={() => remove(record.name)}
+                              />
+                            ),
+                          },
+                        ]}
+                      />
+                      <Button
+                        block
+                        icon={<PlusOutlined />}
+                        type="dashed"
+                        style={{ marginTop: 12 }}
+                        onClick={() =>
+                          add({
+                            id: Date.now().toString(),
+                            productName: "",
+                            quantity: 1,
+                            unitPrice: 0,
+                            total: 0,
+                          })
+                        }
+                      >
+                        Thêm sản phẩm
+                      </Button>
+                    </>
+                  )}
+                </Form.List>
+              </div>
+
+              <div className="bill__modal">
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item label="Giảm giá" name="discount">
+                      <InputNumber
+                        min={0}
+                        style={{ width: "100%" }}
+                        formatter={(value) =>
+                          `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                        }
+                        parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label="Thành tiền">
+                      <div className="total-amount">
+                        {calculatedTotal.toLocaleString("vi-VN")}đ
+                      </div>
+                    </Form.Item>
+                  </Col>
+                  <Col span={24}>
+                    <Form.Item label="Ghi chú" name="notes">
+                      <Input.TextArea placeholder="Ghi chú thêm..." rows={3} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
+            </Form>
+          </Modal>
+        </div>
+      </ManagerLayoutSidebar>
+    </>
   );
 }
