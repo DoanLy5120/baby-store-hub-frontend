@@ -1,31 +1,48 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import axiosClient from "../../../api/axiosClient";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = React.useState({
-    fullName: "",
+    hoTen: "",
     email: "",
-    phone: "",
     password: "",
+    password_confirmation: "",
+    sdt: "",
+    diaChi: "",
+    ngaySinh: "",
   });
   const [error, setError] = React.useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("https://jsonplaceholder.typicode.com/posts", formData);
-      navigate("/login");
+      await axiosClient.post("/auth/register", {
+        email: formData.email,
+        password: formData.password,
+        hoTen: formData.fullName,
+        sdt: formData.phone,
+        password_confirmation: formData.password_confirmation,
+        diaChi: formData.address,
+        ngaySinh: formData.birthday, 
+      });
       alert("Đăng ký thành công! Vui lòng đăng nhập.");
+      navigate("/login");
     } catch (err) {
-      setError("Đăng ký thất bại");
+      console.error(err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Đăng ký thất bại");
+      }
     }
   };
 
-  const handleSocialRegister = (provider) => {
-    alert(`Đăng ký với ${provider} (giả lập)`);
-  };
+  // const handleSocialRegister = (provider) => {
+  //   alert(`Đăng ký với ${provider} (giả lập)`);
+  // };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -33,10 +50,6 @@ const RegisterPage = () => {
 
   return (
     <div className="register-container min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-blue-50 relative overflow-hidden">
-      
-     
-
-     
       <div className="relative z-10 flex w-full max-w-7xl bg-white rounded-3xl overflow-hidden shadow-2xl">
         <div className="hidden md:flex w-1/2 bg-pink-100 relative overflow-hidden">
           <img
@@ -47,12 +60,16 @@ const RegisterPage = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
           <div className="absolute bottom-0 left-0 p-8 text-white">
             <h3 className="text-2xl font-bold mb-2">Bắt đầu hành trình</h3>
-            <p className="opacity-90">Đăng ký để nhận những lời khuyên hữu ích cho mẹ và bé</p>
+            <p className="opacity-90">
+              Đăng ký để nhận những lời khuyên hữu ích cho mẹ và bé
+            </p>
           </div>
         </div>
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
           <div className="register-form">
-            <h2 className="text-3xl font-bold mb-6 text-center text-pink-600">Đăng Ký</h2>
+            <h2 className="text-3xl font-bold mb-6 text-center text-pink-600">
+              Đăng Ký
+            </h2>
             {error && <p className="text-red-500 text-center mb-4">{error}</p>}
             <form onSubmit={handleRegister}>
               <div className="mb-4">
@@ -80,7 +97,33 @@ const RegisterPage = () => {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Số điện thoại</label>
+                <label className="block text-gray-700 mb-2">Địa chỉ</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                  placeholder="Nhập địa chỉ của bạn"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">Ngày sinh</label>
+                <input
+                  type="date"
+                  name="birthday"
+                  value={formData.birthday}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                  placeholder="Nhập email của bạn"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">
+                  Số điện thoại
+                </label>
                 <input
                   type="tel"
                   name="phone"
@@ -103,6 +146,20 @@ const RegisterPage = () => {
                   required
                 />
               </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">
+                  Nhập lại mật khẩu
+                </label>
+                <input
+                  type="password"
+                  name="password_confirmation"
+                  value={formData.password_confirmation}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
+                  placeholder="Nhập lại mật khẩu"
+                  required
+                />
+              </div>
               <button
                 type="submit"
                 className="w-full bg-pink-600 text-white p-3 rounded-lg hover:bg-pink-700 transition shadow-md hover:shadow-lg"
@@ -110,7 +167,7 @@ const RegisterPage = () => {
                 Đăng Ký
               </button>
             </form>
-            <div className="mt-6">
+            {/* <div className="mt-6">
               <div className="flex items-center mb-4">
                 <div className="flex-1 border-t border-gray-300"></div>
                 <span className="px-3 text-gray-500">Hoặc đăng ký với</span>
@@ -130,7 +187,7 @@ const RegisterPage = () => {
                   <i className="fab fa-google"></i>
                 </button>
               </div>
-            </div>
+            </div> */}
             <p className="mt-6 text-center text-gray-600">
               Đã có tài khoản?{" "}
               <span
@@ -144,8 +201,8 @@ const RegisterPage = () => {
         </div>
       </div>
 
-      <div className="absolute top-1/4 left-1/4 w-8 h-8 rounded-full bg-pink-200 opacity-30 animate-float"></div>
-      <div className="absolute bottom-1/3 right-1/4 w-6 h-6 rounded-full bg-blue-200 opacity-30 animate-float-delay"></div>
+      {/* <div className="absolute top-1/4 left-1/4 w-8 h-8 rounded-full bg-pink-200 opacity-30 animate-float"></div>
+      <div className="absolute bottom-1/3 right-1/4 w-6 h-6 rounded-full bg-blue-200 opacity-30 animate-float-delay"></div> */}
     </div>
   );
 };

@@ -6,24 +6,11 @@ import { ShoppingCartOutlined, UndoOutlined } from "@ant-design/icons"
 import RevenueChart from "./RevenueChart"
 import TopProductsChart from "./TopProductsChart"
 import "./Overview.scss"
+import axiosClient from "../../../api/axiosClient"
 
 const { Title, Text } = Typography
 const { Option } = Select
 
-/**
- * SalesDashboard.js - Component chính hiển thị dashboard bán hàng
- *
- * Chức năng:
- * - Hiển thị kết quả bán hàng hôm nay (doanh thu và trả hàng)
- * - Hiển thị biểu đồ doanh thu thuần theo tháng
- * - Hiển thị top 10 sản phẩm bán chạy
- * - Quản lý state cho các filter và tab
- *
- * State:
- * - activeTab: Tab hiện tại đang được chọn (theo ngày/giờ/thứ)
- * - timePeriod: Kỳ thời gian được chọn (tháng này/tháng trước)
- * - productMetric: Metric để sắp xếp sản phẩm (doanh thu/số lượng)
- */
 const SalesDashboard = () => {
   const [activeTab, setActiveTab] = useState("day")
   const [timePeriod, setTimePeriod] = useState("current-month")

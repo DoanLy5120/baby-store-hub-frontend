@@ -91,7 +91,7 @@ const TopProductsChart = ({ metric, period }) => {
                 showInfo={false}
                 strokeColor="#1890ff"
                 trailColor="#f5f5f5"
-                strokeWidth={24}
+                size ={24}
                 className="product-progress"
               />
             </div>
