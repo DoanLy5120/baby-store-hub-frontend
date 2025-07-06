@@ -101,9 +101,6 @@ function Header() {
 
   //khi đã login sẽ xuất hiện số lượng giỏ hàng
   useEffect(() => {
-    //kiểm tra đăng nhập
-    // localStorage.setItem("isLoggedIn", "true");
-    // localStorage.setItem("cart", JSON.stringify([{ id: 1 }, { id: 2 }]));
     const loginStatus = localStorage.getItem("isLoggedIn") === "true";
     setIsLoggedIn(loginStatus);
 

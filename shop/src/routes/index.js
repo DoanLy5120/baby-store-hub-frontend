@@ -1,8 +1,8 @@
 import { DefaultLayout, EmptyLayout, ManagerLayout } from "../layouts";
 import HomePage from "../page/public/HomePage/index";
 import Info from "../page/customer/Info";
-import Login from "../page/public/loginPage/index.js";
-import Register from "../page/public/registerPage/index.js";
+import Login from "../page/public/loginPage";
+import Register from "../page/public/registerPage";
 import Overview from "../page/manager/Overview/index";
 import Selling from "../page/manager/Selling/index";
 import Bill from "../page/manager/Bill/index";
