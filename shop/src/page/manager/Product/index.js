@@ -25,7 +25,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  CalendarOutlined,
 } from "@ant-design/icons";
 import "antd/dist/reset.css";
 import { FaBoxArchive } from "react-icons/fa6";

@@ -6,7 +6,6 @@ import { ShoppingCartOutlined, UndoOutlined } from "@ant-design/icons"
 import RevenueChart from "./RevenueChart"
 import TopProductsChart from "./TopProductsChart"
 import "./Overview.scss"
-import axiosClient from "../../../api/axiosClient"
 
 const { Title, Text } = Typography
 const { Option } = Select
