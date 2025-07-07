@@ -25,7 +25,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  CalendarOutlined,
 } from "@ant-design/icons";
 import "antd/dist/reset.css";
 import { FaBoxArchive } from "react-icons/fa6";
@@ -34,50 +33,47 @@ import { BiSolidCategory } from "react-icons/bi";
 import { AiFillCheckSquare } from "react-icons/ai";
 import { FaWarehouse } from "react-icons/fa";
 import { FaReplyAll } from "react-icons/fa";
+import productApi from "../../../api/productApi";
+import warehouseApi from "../../../api/warehouseApi";
+import categoryApi from "../../../api/categoryApi";
 const { Header, Content } = Layout;
 const { Option } = Select;
 
-const sampleProducts = [
-  {
-    id: "1",
-    productCode: "SP001",
-    name: "Áo thun trẻ em",
-    sku: "AT001",
-    price: 50000,
-    vat: 10,
-    description: "Áo thun cotton cho trẻ em",
-    category: "Quần áo trẻ em",
-    warehouse: "Kho Hà Nội",
-    stock: 15,
-    image:
-      "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcT55K3UGqq97F7RhW2_AHlGQR9JNY1eY9yhQEw6ROFo0qtqUQIsc_vA2w4ApqDFp4BDYCyglyet75VGnidSyviQujHkf1BRdpzdSYcd8jvwq_grnGrlXBo",
-  },
-  {
-    id: "2",
-    productCode: "SP002",
-    name: "Xe đồ chơi",
-    sku: "XD001",
-    price: 100000,
-    vat: 10,
-    description: "Xe đồ chơi bằng nhựa an toàn",
-    category: "Đồ chơi trẻ em",
-    warehouse: "Kho TP.HCM",
-    stock: 5,
-    image:
-      "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcQcgBi1fD0v3WQv9YdUVVtOltY1uOVl6C73HZFMH3vmwwAJOBzRyN2TkYQ8kdg9m_8L2RsBO1JGjajRI0dWj4Dapqm-RqXYq01TJfDK8ke11KKaDuTYKp0V",
-  },
-];
+const mapProductsFromAPI = (data, categories = [], warehouses = []) =>
+  data.map((item) => ({
+    id: item.id,
+    productCode: item.id,
+    name: item.tenSanPham,
+    sku: item.maSKU,
+    vat: item.VAT,
+    description: item.moTa,
+    price: item.giaBan || 0,
+    stock: item.soLuongTon || 0,
+    image: item.hinhAnh
+      ? `${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`
+      : null,
+    category:
+      categories.find((dm) => dm.id === item.danhMuc_id)?.tenDanhMuc ||
+      "Không rõ",
+    warehouse:
+      warehouses.find((kho) => kho.id === item.kho_id)?.tenKho || "Không rõ",
+    categoryId: item.danhMuc_id,
+    warehouseId: item.kho_id,
+  }));
 
 export default function Product() {
-  const [products, setProducts] = useState(sampleProducts);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [form] = Form.useForm();
-  const [filteredProducts, setFilteredProducts] = useState(sampleProducts);
   const [minPrice, setMinPrice] = useState();
   const [maxPrice, setMaxPrice] = useState();
   const [api, contextHolder] = notification.useNotification();
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const searchedProducts = filteredProducts.filter(
     (product) =>
@@ -87,106 +83,178 @@ export default function Product() {
 
   const handleProductClick = (product) => {
     setSelectedProduct(product);
-    form.setFieldsValue(product);
+
+    form.setFieldsValue({
+      productCode: product.productCode,
+      name: product.name,
+      sku: product.sku,
+      price: product.price,
+      vat: product.vat,
+      stock: product.stock,
+      description: product.description,
+      image: product.image,
+      categoryId: product.categoryId,
+      warehouseId: product.warehouseId,
+    });
+
     setIsModalOpen(true);
   };
 
   const handleSaveProduct = async () => {
     try {
       const values = await form.validateFields();
-      const updatedProduct = {
-        ...values,
-        id: selectedProduct?.id || Date.now().toString(),
-      };
+      const formData = new FormData();
+      formData.append("tenSanPham", values.name);
+      formData.append("maSKU", values.sku);
+      formData.append("VAT", values.vat || 0);
+      formData.append("moTa", values.description || "");
+      formData.append("danhMuc_id", values.categoryId);
+      formData.append("kho_id", values.warehouseId);
+      formData.append("giaBan", values.price || 0);
+      formData.append("soLuongTon", values.stock || 0); // Đảm bảo trường tên khớp với backend
+
+      if (values.image && typeof values.image === "object") {
+        formData.append("hinhAnh", values.image); // File
+      }
 
       if (selectedProduct) {
-        setProducts((prev) =>
-          prev.map((prod) =>
-            prod.id === selectedProduct.id ? updatedProduct : prod
-          )
-        );
-        message.success("Cập nhật sản phẩm thành công!");
+        // Khi cập nhật, Laravel/backend có thể cần method _method PUT
+        // Hãy kiểm tra API của bạn có yêu cầu điều này không
+        await productApi.update(selectedProduct.id, formData);
+        message.success("Cập nhật thành công!");
       } else {
-        setProducts((prev) => [...prev, updatedProduct]);
-        message.success("Thêm sản phẩm thành công!");
+        await productApi.create(formData);
+        message.success("Tạo mới thành công!");
       }
+
       setIsModalOpen(false);
       setSelectedProduct(null);
       form.resetFields();
-    } catch (error) {
-      message.error("Vui lòng kiểm tra lại thông tin!");
+
+      // Gọi lại danh sách để đảm bảo dữ liệu hiển thị mới nhất
+      const res = await productApi.getAll();
+      const mapped = mapProductsFromAPI(res.data.data);
+      setProducts(mapped);
+      setFilteredProducts(mapped);
+    } catch (err) {
+      message.error("Lỗi khi lưu sản phẩm!");
+      console.error("Error saving product:", err); // In lỗi ra console để debug
     }
   };
 
-  const handleDeleteProduct = () => {
+  const handleDeleteProduct = async () => {
     if (selectedProduct) {
-      setProducts((prev) =>
-        prev.filter((prod) => prod.id !== selectedProduct.id)
-      );
-      setIsModalOpen(false);
-      setSelectedProduct(null);
-      form.resetFields();
-      setTimeout(() => {
+      try {
+        await productApi.delete(selectedProduct.id);
+
+        setProducts((prev) =>
+          prev.filter((prod) => prod.id !== selectedProduct.id)
+        );
+        setFilteredProducts((prev) =>
+          prev.filter((prod) => prod.id !== selectedProduct.id)
+        );
+
+        setIsModalOpen(false);
+        setSelectedProduct(null);
+        form.resetFields();
+
         api.success({
           message: "Xóa sản phẩm thành công",
           placement: "topRight",
         });
-      }, 300);
+      } catch (err) {
+        message.error("Lỗi khi xóa sản phẩm!");
+        console.error("Error deleting product:", err); // In ra lỗi để dễ debug
+      }
     }
   };
 
   useEffect(() => {
-    setFilteredProducts(products);
-  }, [products]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [productRes, categoryRes, warehouseRes] = await Promise.all([
+          productApi.getAll(),
+          categoryApi.getAll(),
+          warehouseApi.getAll(),
+        ]);
+
+        console.log("🔍 Product raw from API:", productRes.data.data[0]);
+
+        const productData = productRes.data.data;
+        const categoryData = categoryRes.data.data;
+        const warehouseData = warehouseRes.data.data;
+
+        setCategories(categoryData);
+        setWarehouses(warehouseData);
+
+        const mapped = mapProductsFromAPI(
+          productData,
+          categoryData,
+          warehouseData
+        );
+        setProducts(mapped);
+        setFilteredProducts(mapped);
+      } catch (err) {
+        message.error("Lỗi khi tải dữ liệu sản phẩm hoặc sidebar");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const sidebarItems = [
     {
       key: "category",
       label: "Danh mục",
       icon: <BiSolidCategory />,
-      children: [
-        { key: "quan-ao", label: "Quần áo trẻ em", icon: <BiSolidCategory /> },
-        { key: "do-choi", label: "Đồ chơi trẻ em", icon: <BiSolidCategory /> },
-      ],
+      children: categories.map((dm) => ({
+        key: `category-${dm.id}`,
+        label: dm.tenDanhMuc,
+        icon: <BiSolidCategory />,
+      })),
     },
     {
       key: "warehouse",
       label: "Kho",
       icon: <FaWarehouse />,
-      children: [
-        { key: "hanoi", label: "Kho Hà Nội", icon: <FaWarehouse /> },
-        { key: "hcm", label: "Kho TP.HCM", icon: <FaWarehouse /> },
-      ],
+      children: warehouses.map((kho) => ({
+        key: `warehouse-${kho.id}`,
+        label: kho.tenKho,
+        icon: <FaWarehouse />,
+      })),
     },
     {
       key: "status",
-      label: "Trình trạng",
+      label: "Tình trạng",
       icon: <AiFillCheckSquare />,
       children: [
-        { key: "near-out", label: "Gần hết hàng", icon: <AiFillCheckSquare />},
+        { key: "near-out", label: "Gần hết hàng", icon: <AiFillCheckSquare /> },
         { key: "out", label: "Hết hàng", icon: <AiFillCheckSquare /> },
       ],
     },
   ];
 
-  const handleCategoryFilter = (key) => {
-    let categoryName = "";
-    if (key === "quan-ao") categoryName = "Quần áo trẻ em";
-    else if (key === "do-choi") categoryName = "Đồ chơi trẻ em";
-
-    const filtered = products.filter((prod) => prod.category === categoryName);
-    setFilteredProducts(filtered);
+  const handleCategoryFilter = async (categoryId) => {
+    try {
+      const res = await productApi.getByCategory(categoryId);
+      const mapped = mapProductsFromAPI(res.data.data);
+      setFilteredProducts(mapped);
+    } catch (err) {
+      message.error("Lỗi khi lọc theo danh mục");
+    }
   };
 
-  const handleWarehouseFilter = (key) => {
-    let warehouseName = "";
-    if (key === "hanoi") warehouseName = "Kho Hà Nội";
-    else if (key === "hcm") warehouseName = "Kho TP.HCM";
-
-    const filtered = products.filter(
-      (prod) => prod.warehouse === warehouseName
-    );
-    setFilteredProducts(filtered);
+  const handleWarehouseFilter = async (warehouseId) => {
+    try {
+      const res = await productApi.getByWarehouse(warehouseId);
+      const mapped = mapProductsFromAPI(res.data.data);
+      setFilteredProducts(mapped);
+    } catch (err) {
+      message.error("Lỗi khi lọc theo kho");
+    }
   };
 
   const handleStatusFilter = (key) => {
@@ -254,10 +322,11 @@ export default function Product() {
       render: (desc) =>
         desc?.length > 10 ? desc.substring(0, 10) + "..." : desc,
     },
+    { title: "Số lượng tồn", dataIndex: "stock", key: "stock" },
     { title: "Danh mục", dataIndex: "category", key: "category" },
     { title: "Kho", dataIndex: "warehouse", key: "warehouse" },
     {
-      title: "Trình trạng",
+      title: "Tình trạng",
       dataIndex: "stock",
       key: "stock",
       render: (stock) => (
@@ -285,21 +354,17 @@ export default function Product() {
       <ManagerLayoutSidebar
         title="SẢN PHẨM"
         sidebarItems={sidebarItems}
-        onSidebarClick={({ key, keyPath }) => {
-          const parentKey = keyPath[1]; // "status", "warehouse", "category", v.v...
-
-          switch (parentKey) {
-            case "category":
-              handleCategoryFilter(key);
-              break;
-            case "warehouse":
-              handleWarehouseFilter(key);
-              break;
-            case "status":
-              handleStatusFilter(key);
-              break;
-            default:
-              setFilteredProducts(products);
+        onSidebarClick={({ key }) => {
+          if (key.startsWith("category-")) {
+            const id = key.replace("category-", "");
+            handleCategoryFilter(id);
+          } else if (key.startsWith("warehouse-")) {
+            const id = key.split("-")[1];
+            handleWarehouseFilter(id);
+          } else if (key === "near-out" || key === "out") {
+            handleStatusFilter(key);
+          } else {
+            setFilteredProducts(products); // Reset
           }
         }}
       >
@@ -432,11 +497,8 @@ export default function Product() {
                   <Form.Item
                     label="Mã sản phẩm"
                     name="productCode"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập mã sản phẩm!" },
-                    ]}
                   >
-                    <Input />
+                    <Input disabled />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
@@ -486,24 +548,21 @@ export default function Product() {
                   >
                     <Upload
                       name="file"
-                      listType="picture"
-                      showUploadList={false}
                       beforeUpload={(file) => {
-                        const reader = new FileReader();
-                        reader.readAsDataURL(file); // Chuyển file thành base64
-                        reader.onload = () => {
-                          form.setFieldValue("image", reader.result); // Gán URL vào form
-                        };
-                        return false; // Ngăn không upload thật
+                        form.setFieldValue("image", file); // giữ nguyên file gốc
+                        return false;
                       }}
+                      showUploadList={false}
                     >
                       <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
                     </Upload>
-                    {/* Hiển thị ảnh ngay dưới nút nếu đã chọn */}
                     {form.getFieldValue("image") && (
                       <img
-                        src={form.getFieldValue("image")}
-                        alt="preview"
+                        src={
+                          typeof form.getFieldValue("image") === "string"
+                            ? form.getFieldValue("image") // link
+                            : URL.createObjectURL(form.getFieldValue("image")) // file
+                        }
                         style={{ width: 100, marginTop: 10, borderRadius: 8 }}
                       />
                     )}
@@ -511,18 +570,24 @@ export default function Product() {
                 </Col>
 
                 <Col span={12}>
-                  <Form.Item label="Danh mục" name="category">
+                  <Form.Item label="Danh mục" name="categoryId">
                     <Select>
-                      <Option value="Quần áo trẻ em">Quần áo trẻ em</Option>
-                      <Option value="Đồ chơi trẻ em">Đồ chơi trẻ em</Option>
+                      {categories.map((dm) => (
+                        <Option key={dm.id} value={dm.id}>
+                          {dm.tenDanhMuc}
+                        </Option>
+                      ))}
                     </Select>
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item label="Kho" name="warehouse">
+                  <Form.Item label="Kho" name="warehouseId">
                     <Select>
-                      <Option value="Kho Hà Nội">Kho Hà Nội</Option>
-                      <Option value="Kho TP.HCM">Kho TP.HCM</Option>
+                      {warehouses.map((kho) => (
+                        <Option key={kho.id} value={kho.id}>
+                          {kho.tenKho}
+                        </Option>
+                      ))}
                     </Select>
                   </Form.Item>
                 </Col>

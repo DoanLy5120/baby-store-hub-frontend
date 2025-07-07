@@ -25,6 +25,9 @@ import {
   EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
+import categoryApi from "../../../api/categoryApi";
+import providerApi from "../../../api/providerApi";
+import warehouseApi from "../../../api/warehouseApi";
 import { MdHomeWork } from "react-icons/md";
 import { FaWarehouse } from "react-icons/fa";
 import { FaReplyAll } from "react-icons/fa";
@@ -35,59 +38,31 @@ const { Option } = Select;
 
 const { Header, Content } = Layout;
 
-// Sample data for categories
-const sampleCategories = [
-  {
-    id: "1",
-    categoryCode: "DM001",
-    name: "Quần áo trẻ em",
-    description: "Quần áo dành cho trẻ từ 0-5 tuổi",
-    productCount: 50,
-    provide: "Cơ sở sản xuất Thiên Phú",
-    image:
-      "https://down-vn.img.susercontent.com/file/a6cce422389cbb21eef67ba583238b3f",
-    warehouse: "Kho Hà Nội",
-  },
-  {
-    id: "2",
-    categoryCode: "DM002",
-    name: "Đồ chơi trẻ em",
-    description: "Đồ chơi an toàn cho trẻ em",
-    productCount: 30,
-    provide: "Công ty sữa Mega",
-    image:
-      "https://www.kidsplaza.vn/blog/wp-content/uploads/2012/12/chon-do-choi-cho-be.jpg",
-    warehouse: "Kho TP.HCM",
-  },
-];
-
-// Sample data for provide
-const sampleprovide = [
-  {
-    id: "1",
-    categoryCode: "CC001",
-    name: "Cơ sở sản xuất Thiên Phú",
-    description: "Sản xuất quần áo cho trẻ em",
-    address: "Hà Nội",
-  },
-  {
-    id: "2",
-    categoryCode: "CC002",
-    name: "Công ty sữa Mega",
-    description: "Sản xuất sữa bột cho trẻ em",
-    address: "Đà Nẵng",
-  },
-];
+const mapCategoryData = (data) =>
+  data.map((item) => ({
+    id: item.id,
+    categoryCode: `DM${item.id.toString().padStart(3, "0")}`,
+    name: item.tenDanhMuc,
+    description: item.moTa,
+    productCount: item.soLuongSanPham,
+    provide: item.nhaCungCap,
+    image: item.hinhAnh
+      ? `${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`
+      : null,
+    warehouse: item.kho?.tenKho || "",
+  }));
 
 export default function Category() {
-  const [categories, setCategories] = useState(sampleCategories);
+  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
-  const [filteredCategories, setFilteredCategories] =
-    useState(sampleCategories);
+  const [filteredCategories, setFilteredCategories] = useState([]);
   const [api, contextHolder] = notification.useNotification();
+  const [previewImage, setPreviewImage] = useState(null);
+  const [providers, setProviders] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
 
   // Search categories by code or name
   const searchedCategories = filteredCategories.filter(
@@ -99,9 +74,8 @@ export default function Category() {
   // Handle category click
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
-    form.setFieldsValue({
-      ...category,
-    });
+    form.setFieldsValue({ ...category });
+    setPreviewImage(category.image); // Gán lại preview từ URL hiện có
     setIsModalOpen(true);
   };
 
@@ -109,42 +83,78 @@ export default function Category() {
   const handleSaveCategory = async () => {
     try {
       const values = await form.validateFields();
-      const updatedCategory = {
-        ...values,
-        id: selectedCategory?.id || Date.now().toString(),
-      };
+      const formData = new FormData();
+
+      formData.append("tenDanhMuc", values.name);
+      formData.append("moTa", values.description || "");
+      formData.append("soLuongSanPham", values.productCount || 0);
+      formData.append("nhaCungCap", values.provide);
+
+      const warehouse = warehouses.find((w) => w.tenKho === values.warehouse);
+      formData.append("idKho", warehouse?.id?.toString() || "");
+
+      if (values.categoryCode) {
+        formData.append("maDanhMuc", values.categoryCode); // 
+      }
+
+      if (typeof values.image === "string") {
+        // giữ nguyên ảnh cũ
+      } else if (values.image instanceof File) {
+        formData.append("hinhAnh", values.image);
+      }
 
       if (selectedCategory) {
-        setCategories((prev) =>
-          prev.map((cat) =>
-            cat.id === selectedCategory.id ? updatedCategory : cat
-          )
+        const response = await categoryApi.update(
+          selectedCategory.id,
+          formData
         );
-        setTimeout(() => {
-          api.success({
-            message: "Cập nhật danh mục thành công",
-            placement: "topRight",
-          });
-        }, 300);
+        console.log("Cập nhật trả về:", response);
+
+        if (response?.data?.success) {
+          message.success("Cập nhật danh mục thành công");
+
+          // ✅ Chỉ reset nếu cập nhật thành công
+          form.resetFields();
+          setPreviewImage(null);
+          setSelectedCategory(null);
+          setIsModalOpen(false);
+
+          const getRes = await categoryApi.getAll();
+          const mapped = mapCategoryData(getRes.data.data);
+          setCategories(mapped);
+          setFilteredCategories(mapped);
+        } else {
+          throw new Error(response?.data?.message || "Cập nhật thất bại");
+        }
       } else {
-        setCategories((prev) => [...prev, updatedCategory]);
-        setTimeout(() => {
-          api.success({
-            message: "Thêm danh mục mới thành công",
-            placement: "topRight",
-          });
-        }, 300);
+        const response = await categoryApi.create(formData);
+
+        if (response?.data?.success) {
+          message.success("Tạo danh mục mới thành công");
+        } else {
+          throw new Error(response?.data?.message || "Tạo thất bại");
+        }
       }
-      setIsModalOpen(false);
-      setSelectedCategory(null);
+
+      // Làm mới
       form.resetFields();
+      setPreviewImage(null);
+      setSelectedCategory(null);
+      setIsModalOpen(false);
+
+      const getRes = await categoryApi.getAll();
+      const mapped = mapCategoryData(getRes.data.data);
+      setCategories(mapped);
+      setFilteredCategories(mapped);
     } catch (error) {
-      message.error("Vui lòng kiểm tra lại thông tin!");
+      console.error("Lỗi cập nhật:", error);
+      message.error(error.message || "Vui lòng kiểm tra lại thông tin!");
     }
   };
 
   // Handle delete category
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
+    await categoryApi.delete(selectedCategory.id);
     if (selectedCategory) {
       setCategories((prev) =>
         prev.filter((cat) => cat.id !== selectedCategory.id)
@@ -152,6 +162,7 @@ export default function Category() {
       setIsModalOpen(false);
       setSelectedCategory(null);
       form.resetFields();
+      setPreviewImage(null);
 
       setTimeout(() => {
         api.success({
@@ -163,8 +174,52 @@ export default function Category() {
   };
 
   useEffect(() => {
-    setFilteredCategories(categories);
-  }, [categories]);
+    const fetchCategories = async () => {
+      try {
+        const response = await categoryApi.getAll();
+        if (response.data.success) {
+          const fetched = response.data.data.map((item) => ({
+            id: item.id,
+            categoryCode: `DM${item.id.toString().padStart(3, "0")}`,
+            name: item.tenDanhMuc,
+            description: item.moTa,
+            productCount: item.soLuongSanPham,
+            provide: item.nhaCungCap,
+            image: item.hinhAnh
+              ? `${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`
+              : null,
+            warehouse: item.kho?.tenKho || "",
+          }));
+          setCategories(fetched);
+          setFilteredCategories(fetched); // ✅ cập nhật lọc ban đầu
+        }
+      } catch (error) {
+        message.error("Lỗi khi tải danh mục");
+      }
+    };
+
+    const fetchProviders = async () => {
+      try {
+        const res = await providerApi.getAll();
+        setProviders(res.data.data);
+      } catch (error) {
+        message.error("Lỗi khi tải nhà cung cấp");
+      }
+    };
+
+    const fetchWarehouses = async () => {
+      try {
+        const res = await warehouseApi.getAll();
+        setWarehouses(res.data.data); // tuỳ vào format API của bạn
+      } catch (error) {
+        message.error("Lỗi khi tải danh sách kho");
+      }
+    };
+
+    fetchCategories();
+    fetchProviders();
+    fetchWarehouses();
+  }, []);
 
   // Sidebar items
   const sidebarItems = [
@@ -172,43 +227,51 @@ export default function Category() {
       key: "warehouse",
       label: "Kho",
       icon: <FaWarehouse />,
-      children: [
-        { key: "hanoi", label: "Kho Hà Nội", icon: <FaWarehouse /> },
-        { key: "hcm", label: "Kho TP.HCM", icon: <FaWarehouse /> },
-      ],
+      children: warehouses.map((w) => ({
+        key: w.id,
+        label: w.tenKho,
+        icon: <FaWarehouse />,
+      })),
     },
     {
       key: "provide",
       label: "Nhà cung cấp",
       icon: <MdHomeWork />,
-      children: [
-        { key: "1", label: "Cơ sở sản xuất Thiên Phú", icon: <MdHomeWork /> },
-        { key: "2", label: "Công ty sữa Mega", icon: <MdHomeWork /> },
-      ],
+      children: providers.map((prov) => ({
+        key: String(prov.id),
+        label: prov.name,
+        icon: <MdHomeWork />,
+      })),
     },
   ];
 
   //handle provide filter
-  const handleProviderFilter = (key) => {
-    const provider = sampleprovide.find((p) => p.id === key);
-    if (provider) {
-      const filtered = categories.filter(
-        (cat) => cat.provide === provider.name
-      );
-      setFilteredCategories(filtered);
-      message.success(`Đã lọc theo nhà cung cấp ${provider.name}`);
-    } else {
+  const handleProviderFilter = (id) => {
+    const provider = providers.find((p) => String(p.id) === String(id));
+    if (!provider) {
       setFilteredCategories(categories);
+      message.warning("Không tìm thấy nhà cung cấp tương ứng");
+      return;
     }
+
+    const filtered = categories.filter((cat) => cat.provide === provider.name);
+    setFilteredCategories(filtered);
   };
 
   // Handle warehouse filter
-  const handleWarehouseFilter = (key) => {
-    const filtered = categories.filter((cat) =>
-      cat.warehouse.toLowerCase().includes(key)
+  const handleWarehouseFilter = (id) => {
+    const warehouse = warehouses.find((w) => w.id === id);
+    if (!warehouse) {
+      setFilteredCategories(categories);
+      message.warning("Không tìm thấy kho tương ứng");
+      return;
+    }
+
+    const filtered = categories.filter(
+      (cat) => cat.warehouse === warehouse.tenKho
     );
     setFilteredCategories(filtered);
-    message.success(`Đã lọc theo kho ${key === "hanoi" ? "Hà Nội" : "TP.HCM"}`);
+    message.success(`Đã lọc theo kho ${warehouse.tenKho}`);
   };
 
   // Table columns
@@ -336,6 +399,7 @@ export default function Category() {
               setIsModalOpen(false);
               setSelectedCategory(null);
               form.resetFields();
+              setPreviewImage(null);
             }}
             width={700}
             footer={[
@@ -364,14 +428,8 @@ export default function Category() {
             <Form form={form} layout="vertical">
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item
-                    label="Mã danh mục"
-                    name="categoryCode"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập mã danh mục!" },
-                    ]}
-                  >
-                    <Input />
+                  <Form.Item label="Mã danh mục" name="categoryCode">
+                    <Input disabled />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
@@ -409,20 +467,20 @@ export default function Category() {
                       listType="picture"
                       showUploadList={false}
                       beforeUpload={(file) => {
+                        form.setFieldValue("image", file); // lưu file để upload
                         const reader = new FileReader();
-                        reader.readAsDataURL(file); // Chuyển file thành base64
+                        reader.readAsDataURL(file);
                         reader.onload = () => {
-                          form.setFieldValue("image", reader.result); // Gán URL vào form
+                          setPreviewImage(reader.result); // hiển thị ảnh
                         };
-                        return false; // Ngăn không upload thật
+                        return false;
                       }}
                     >
                       <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
                     </Upload>
-                    {/* Hiển thị ảnh ngay dưới nút nếu đã chọn */}
-                    {form.getFieldValue("image") && (
+                    {previewImage && (
                       <img
-                        src={form.getFieldValue("image")}
+                        src={previewImage}
                         alt="preview"
                         style={{ width: 100, marginTop: 10, borderRadius: 8 }}
                       />
@@ -432,7 +490,7 @@ export default function Category() {
                 <Col span={12}>
                   <Form.Item label="Nhà cung cấp" name="provide">
                     <Select>
-                      {sampleprovide.map((prov) => (
+                      {providers.map((prov) => (
                         <Option key={prov.id} value={prov.name}>
                           {prov.name}
                         </Option>
@@ -443,8 +501,11 @@ export default function Category() {
                 <Col span={12}>
                   <Form.Item label="Kho" name="warehouse">
                     <Select>
-                      <Option value="Kho Hà Nội">Kho Hà Nội</Option>
-                      <Option value="Kho TP.HCM">Kho TP.HCM</Option>
+                      {warehouses.map((w) => (
+                        <Option key={w.id} value={w.tenKho}>
+                          {w.tenKho}
+                        </Option>
+                      ))}
                     </Select>
                   </Form.Item>
                 </Col>
