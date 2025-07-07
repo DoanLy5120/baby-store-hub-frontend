@@ -6,13 +6,11 @@ const productApi = {
   update: (id, data) => axiosClient.post(`/san-pham/${id}?_method=POST`, data),
   delete: (id) => axiosClient.delete(`/san-pham/${id}`),
 
-  // Lọc theo danh mục
   getByCategory: (categoryId) =>
-    axiosClient.get(`/san-pham/loc-theo-danh-muc/${categoryId}`),
+    axiosClient.get(`/danh-muc/${categoryId}/san-pham`),
 
-  // Lọc theo kho
   getByWarehouse: (warehouseId) =>
-    axiosClient.get(`/san-pham/loc-theo-kho/${warehouseId}`),
+  axiosClient.get(`/san-pham/kho/${warehouseId}?_=${Date.now()}`),
 };
 
 export default productApi;

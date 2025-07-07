@@ -240,7 +240,7 @@ export default function Product() {
   const handleCategoryFilter = async (categoryId) => {
     try {
       const res = await productApi.getByCategory(categoryId);
-      const mapped = mapProductsFromAPI(res.data.data);
+      const mapped = mapProductsFromAPI(res.data.data, categories, warehouses);
       setFilteredProducts(mapped);
     } catch (err) {
       message.error("Lỗi khi lọc theo danh mục");
@@ -250,7 +250,7 @@ export default function Product() {
   const handleWarehouseFilter = async (warehouseId) => {
     try {
       const res = await productApi.getByWarehouse(warehouseId);
-      const mapped = mapProductsFromAPI(res.data.data);
+      const mapped = mapProductsFromAPI(res.data.data, categories, warehouses);
       setFilteredProducts(mapped);
     } catch (err) {
       message.error("Lỗi khi lọc theo kho");
@@ -359,7 +359,7 @@ export default function Product() {
             const id = key.replace("category-", "");
             handleCategoryFilter(id);
           } else if (key.startsWith("warehouse-")) {
-            const id = key.split("-")[1];
+            const id = key.replace("warehouse-", "");
             handleWarehouseFilter(id);
           } else if (key === "near-out" || key === "out") {
             handleStatusFilter(key);
@@ -494,10 +494,7 @@ export default function Product() {
             <Form form={form} layout="vertical">
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item
-                    label="Mã sản phẩm"
-                    name="productCode"
-                  >
+                  <Form.Item label="Mã sản phẩm" name="productCode">
                     <Input disabled />
                   </Form.Item>
                 </Col>

@@ -63,6 +63,8 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 80px; 
 
   .search-input {
     width: 700px;
