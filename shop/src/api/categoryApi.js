@@ -14,7 +14,7 @@ const categoryApi = {
     }),
 
   update: (id, data) =>
-    axiosClient.post(`/danh-muc/${id}?_method=PUT`, data, {
+    axiosClient.post(`/danh-muc/${id}?_method=POST`, data, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

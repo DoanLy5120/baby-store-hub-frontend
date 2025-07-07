@@ -38,49 +38,19 @@ const { Option } = Select;
 
 const { Header, Content } = Layout;
 
-// Sample data for categories
-// const sampleCategories = [
-//   {
-//     id: "1",
-//     categoryCode: "DM001",
-//     name: "Quần áo trẻ em",
-//     description: "Quần áo dành cho trẻ từ 0-5 tuổi",
-//     productCount: 50,
-//     provide: "Cơ sở sản xuất Thiên Phú",
-//     image:
-//       "https://down-vn.img.susercontent.com/file/a6cce422389cbb21eef67ba583238b3f",
-//     warehouse: "Kho Hà Nội",
-//   },
-//   {
-//     id: "2",
-//     categoryCode: "DM002",
-//     name: "Đồ chơi trẻ em",
-//     description: "Đồ chơi an toàn cho trẻ em",
-//     productCount: 30,
-//     provide: "Công ty sữa Mega",
-//     image:
-//       "https://www.kidsplaza.vn/blog/wp-content/uploads/2012/12/chon-do-choi-cho-be.jpg",
-//     warehouse: "Kho TP.HCM",
-//   },
-// ];
-
-// Sample data for provide
-// const sampleprovide = [
-//   {
-//     id: "1",
-//     categoryCode: "CC001",
-//     name: "Cơ sở sản xuất Thiên Phú",
-//     description: "Sản xuất quần áo cho trẻ em",
-//     address: "Hà Nội",
-//   },
-//   {
-//     id: "2",
-//     categoryCode: "CC002",
-//     name: "Công ty sữa Mega",
-//     description: "Sản xuất sữa bột cho trẻ em",
-//     address: "Đà Nẵng",
-//   },
-// ];
+const mapCategoryData = (data) =>
+  data.map((item) => ({
+    id: item.id,
+    categoryCode: `DM${item.id.toString().padStart(3, "0")}`,
+    name: item.tenDanhMuc,
+    description: item.moTa,
+    productCount: item.soLuongSanPham,
+    provide: item.nhaCungCap,
+    image: item.hinhAnh
+      ? `${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`
+      : null,
+    warehouse: item.kho?.tenKho || "",
+  }));
 
 export default function Category() {
   const [categories, setCategories] = useState([]);
@@ -119,54 +89,66 @@ export default function Category() {
       formData.append("moTa", values.description || "");
       formData.append("soLuongSanPham", values.productCount || 0);
       formData.append("nhaCungCap", values.provide);
-      const warehouse = warehouses.find((w) => w.tenKho === values.warehouse);
-      formData.append("idKho", warehouse?.id || null);
 
-      if (values.image instanceof File) {
+      const warehouse = warehouses.find((w) => w.tenKho === values.warehouse);
+      formData.append("idKho", warehouse?.id?.toString() || "");
+
+      if (values.categoryCode) {
+        formData.append("maDanhMuc", values.categoryCode); // 
+      }
+
+      if (typeof values.image === "string") {
+        // giữ nguyên ảnh cũ
+      } else if (values.image instanceof File) {
         formData.append("hinhAnh", values.image);
       }
 
       if (selectedCategory) {
-        await categoryApi.update(selectedCategory.id, formData);
-        message.success("Cập nhật danh mục thành công");
+        const response = await categoryApi.update(
+          selectedCategory.id,
+          formData
+        );
+        console.log("Cập nhật trả về:", response);
+
+        if (response?.data?.success) {
+          message.success("Cập nhật danh mục thành công");
+
+          // ✅ Chỉ reset nếu cập nhật thành công
+          form.resetFields();
+          setPreviewImage(null);
+          setSelectedCategory(null);
+          setIsModalOpen(false);
+
+          const getRes = await categoryApi.getAll();
+          const mapped = mapCategoryData(getRes.data.data);
+          setCategories(mapped);
+          setFilteredCategories(mapped);
+        } else {
+          throw new Error(response?.data?.message || "Cập nhật thất bại");
+        }
       } else {
-        await categoryApi.create(formData);
-        // hoặc await categoryApi.update(...)
+        const response = await categoryApi.create(formData);
 
-        message.success("Tạo danh mục mới thành công");
-
-        form.resetFields();
-        setPreviewImage(null);
-        setSelectedCategory(null);
-
-        const response = await categoryApi.getAll();
-        setCategories(response.data.data.map(/* mapping logic */));
-        setIsModalOpen(false); 
+        if (response?.data?.success) {
+          message.success("Tạo danh mục mới thành công");
+        } else {
+          throw new Error(response?.data?.message || "Tạo thất bại");
+        }
       }
 
+      // Làm mới
       form.resetFields();
       setPreviewImage(null);
       setSelectedCategory(null);
       setIsModalOpen(false);
 
-      // reload lại danh sách sau khi thêm/sửa
-      const response = await categoryApi.getAll();
-      setCategories(
-        response.data.data.map((item) => ({
-          id: item.id,
-          categoryCode: `DM${item.id.toString().padStart(3, "0")}`,
-          name: item.tenDanhMuc,
-          description: item.moTa,
-          productCount: item.soLuongSanPham,
-          provide: item.nhaCungCap,
-          image: item.hinhAnh
-            ? `${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`
-            : null,
-          warehouse: item.kho?.tenKho || "",
-        }))
-      );
+      const getRes = await categoryApi.getAll();
+      const mapped = mapCategoryData(getRes.data.data);
+      setCategories(mapped);
+      setFilteredCategories(mapped);
     } catch (error) {
-      message.error("Vui lòng kiểm tra lại thông tin!");
+      console.error("Lỗi cập nhật:", error);
+      message.error(error.message || "Vui lòng kiểm tra lại thông tin!");
     }
   };
 
@@ -245,10 +227,11 @@ export default function Category() {
       key: "warehouse",
       label: "Kho",
       icon: <FaWarehouse />,
-      children: [
-        { key: "hanoi", label: "Kho Hà Nội", icon: <FaWarehouse /> },
-        { key: "hcm", label: "Kho TP.HCM", icon: <FaWarehouse /> },
-      ],
+      children: warehouses.map((w) => ({
+        key: w.id,
+        label: w.tenKho,
+        icon: <FaWarehouse />,
+      })),
     },
     {
       key: "provide",
@@ -263,26 +246,32 @@ export default function Category() {
   ];
 
   //handle provide filter
-  const handleProviderFilter = (key) => {
-    const provider = providers.find((p) => p.id === key);
-    if (provider) {
-      const filtered = categories.filter(
-        (cat) => cat.provide === provider.name
-      );
-      setFilteredCategories(filtered);
-      message.success(`Đã lọc theo nhà cung cấp ${provider.name}`);
-    } else {
+  const handleProviderFilter = (id) => {
+    const provider = providers.find((p) => String(p.id) === String(id));
+    if (!provider) {
       setFilteredCategories(categories);
+      message.warning("Không tìm thấy nhà cung cấp tương ứng");
+      return;
     }
+
+    const filtered = categories.filter((cat) => cat.provide === provider.name);
+    setFilteredCategories(filtered);
   };
 
   // Handle warehouse filter
-  const handleWarehouseFilter = (key) => {
-    const filtered = categories.filter((cat) =>
-      cat.warehouse.toLowerCase().includes(key)
+  const handleWarehouseFilter = (id) => {
+    const warehouse = warehouses.find((w) => w.id === id);
+    if (!warehouse) {
+      setFilteredCategories(categories);
+      message.warning("Không tìm thấy kho tương ứng");
+      return;
+    }
+
+    const filtered = categories.filter(
+      (cat) => cat.warehouse === warehouse.tenKho
     );
     setFilteredCategories(filtered);
-    message.success(`Đã lọc theo kho ${key === "hanoi" ? "Hà Nội" : "TP.HCM"}`);
+    message.success(`Đã lọc theo kho ${warehouse.tenKho}`);
   };
 
   // Table columns
@@ -439,14 +428,8 @@ export default function Category() {
             <Form form={form} layout="vertical">
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item
-                    label="Mã danh mục"
-                    name="categoryCode"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập mã danh mục!" },
-                    ]}
-                  >
-                    <Input />
+                  <Form.Item label="Mã danh mục" name="categoryCode">
+                    <Input disabled />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
