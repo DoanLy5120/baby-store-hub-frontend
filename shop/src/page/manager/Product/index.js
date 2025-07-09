@@ -51,7 +51,7 @@ const mapProductsFromAPI = (data, categories = [], warehouses = []) =>
     price: item.giaBan || 0,
     stock: item.soLuongTon || 0,
     image: item.hinhAnh
-      ? `${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`
+      ? `${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`
       : null,
     category:
       categories.find((dm) => dm.id === item.danhMuc_id)?.tenDanhMuc ||

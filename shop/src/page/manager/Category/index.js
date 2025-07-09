@@ -47,7 +47,7 @@ const mapCategoryData = (data) =>
     productCount: item.soLuongSanPham,
     provide: item.nhaCungCap,
     image: item.hinhAnh
-      ? `${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`
+      ? `${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`
       : null,
     warehouse: item.kho?.tenKho || "",
   }));
@@ -200,7 +200,7 @@ export default function Category() {
             productCount: item.soLuongSanPham,
             provide: item.nhaCungCap,
             image: item.hinhAnh
-              ? `${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`
+              ? `${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`
               : null,
             warehouse: item.kho?.tenKho || "",
           }));
