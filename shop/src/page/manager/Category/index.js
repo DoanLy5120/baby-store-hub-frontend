@@ -94,7 +94,7 @@ export default function Category() {
       formData.append("idKho", warehouse?.id?.toString() || "");
 
       if (values.categoryCode) {
-        formData.append("maDanhMuc", values.categoryCode); // 
+        formData.append("maDanhMuc", values.categoryCode); //
       }
 
       if (typeof values.image === "string") {
@@ -108,12 +108,13 @@ export default function Category() {
           selectedCategory.id,
           formData
         );
-        console.log("Cập nhật trả về:", response);
 
         if (response?.data?.success) {
-          message.success("Cập nhật danh mục thành công");
+          api.success({
+            message: "Cập nhật sản phẩm thành công",
+            placement: "topRight",
+          });
 
-          // ✅ Chỉ reset nếu cập nhật thành công
           form.resetFields();
           setPreviewImage(null);
           setSelectedCategory(null);
@@ -130,7 +131,10 @@ export default function Category() {
         const response = await categoryApi.create(formData);
 
         if (response?.data?.success) {
-          message.success("Tạo danh mục mới thành công");
+          api.success({
+            message: "Tạo mới sản phẩm thành công",
+            placement: "topRight",
+          });
         } else {
           throw new Error(response?.data?.message || "Tạo thất bại");
         }
@@ -170,6 +174,16 @@ export default function Category() {
           placement: "topRight",
         });
       }, 300);
+
+      form.resetFields();
+      setPreviewImage(null);
+      setSelectedCategory(null);
+      setIsModalOpen(false);
+
+      const getRes = await categoryApi.getAll();
+      const mapped = mapCategoryData(getRes.data.data);
+      setCategories(mapped);
+      setFilteredCategories(mapped);
     }
   };
 

@@ -27,6 +27,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import "antd/dist/reset.css";
+import { formatVND } from "../../../utils";
 import { FaBoxArchive } from "react-icons/fa6";
 import { UploadOutlined } from "@ant-design/icons";
 import { BiSolidCategory } from "react-icons/bi";
@@ -118,13 +119,17 @@ export default function Product() {
       }
 
       if (selectedProduct) {
-        // Khi cập nhật, Laravel/backend có thể cần method _method PUT
-        // Hãy kiểm tra API của bạn có yêu cầu điều này không
         await productApi.update(selectedProduct.id, formData);
-        message.success("Cập nhật thành công!");
+        api.success({
+          message: "Cập nhật sản phẩm thành công",
+          placement: "topRight",
+        });
       } else {
         await productApi.create(formData);
-        message.success("Tạo mới thành công!");
+        api.success({
+          message: "Tạo mới sản phẩm thành công",
+          placement: "topRight",
+        });
       }
 
       setIsModalOpen(false);
@@ -162,6 +167,12 @@ export default function Product() {
           message: "Xóa sản phẩm thành công",
           placement: "topRight",
         });
+
+        // Gọi lại danh sách để đảm bảo dữ liệu hiển thị mới nhất
+        const res = await productApi.getAll();
+        const mapped = mapProductsFromAPI(res.data.data);
+        setProducts(mapped);
+        setFilteredProducts(mapped);
       } catch (err) {
         message.error("Lỗi khi xóa sản phẩm!");
         console.error("Error deleting product:", err); // In ra lỗi để dễ debug
@@ -307,21 +318,21 @@ export default function Product() {
     },
     { title: "Mã sản phẩm", dataIndex: "productCode", key: "productCode" },
     { title: "Tên sản phẩm", dataIndex: "name", key: "name" },
-    { title: "Mã SKU", dataIndex: "sku", key: "sku" },
+    // { title: "Mã SKU", dataIndex: "sku", key: "sku" },
     {
-      title: "Giá bán",
+      title: "Đơn giá sản phẩm",
       dataIndex: "price",
       key: "price",
-      render: (price) => `${price.toLocaleString("vi-VN")}đ`,
+      render: (price) => `${formatVND(price)}`,
     },
-    { title: "VAT", dataIndex: "vat", key: "vat", render: (vat) => `${vat}%` },
-    {
-      title: "Mô tả",
-      dataIndex: "description",
-      key: "description",
-      render: (desc) =>
-        desc?.length > 10 ? desc.substring(0, 10) + "..." : desc,
-    },
+    // { title: "VAT", dataIndex: "vat", key: "vat", render: (vat) => `${vat}%` },
+    // {
+    //   title: "Mô tả",
+    //   dataIndex: "description",
+    //   key: "description",
+    //   render: (desc) =>
+    //     desc?.length > 10 ? desc.substring(0, 10) + "..." : desc,
+    // },
     { title: "Số lượng tồn", dataIndex: "stock", key: "stock" },
     { title: "Danh mục", dataIndex: "category", key: "category" },
     { title: "Kho", dataIndex: "warehouse", key: "warehouse" },
@@ -518,7 +529,7 @@ export default function Product() {
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item label="Giá bán" name="price">
+                  <Form.Item label="Đơn giá sản phẩm" name="price">
                     <InputNumber min={0} style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
