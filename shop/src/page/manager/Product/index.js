@@ -27,7 +27,8 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import "antd/dist/reset.css";
-import { formatVND } from "../../../utils";
+import { formatVND } from "../../../utils/formatter";
+import { formatNumber } from "../../../utils/formaterNumber";
 import { FaBoxArchive } from "react-icons/fa6";
 import { UploadOutlined } from "@ant-design/icons";
 import { BiSolidCategory } from "react-icons/bi";
@@ -51,7 +52,9 @@ const mapProductsFromAPI = (data, categories = [], warehouses = []) =>
     price: item.giaBan || 0,
     stock: item.soLuongTon || 0,
     image: item.hinhAnh
-      ? `${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`
+      ? `${"https://web-production-c18cf.up.railway.app"}/storage/${
+          item.hinhAnh
+        }`
       : null,
     category:
       categories.find((dm) => dm.id === item.danhMuc_id)?.tenDanhMuc ||
@@ -318,21 +321,18 @@ export default function Product() {
     },
     { title: "Mã sản phẩm", dataIndex: "productCode", key: "productCode" },
     { title: "Tên sản phẩm", dataIndex: "name", key: "name" },
-    // { title: "Mã SKU", dataIndex: "sku", key: "sku" },
     {
-      title: "Đơn giá sản phẩm",
-      dataIndex: "price",
-      key: "price",
-      render: (price) => `${formatVND(price)}`,
+      title: "Đơn giá (đã VAT)",
+      key: "priceWithVAT",
+      render: (_, record) => {
+        const price = Number(record.price) || 0;
+        const vat = Number(record.vat) || 0;
+        const priceWithVAT = price + (price * vat) / 100;
+        return formatVND(priceWithVAT);
+      },
     },
-    // { title: "VAT", dataIndex: "vat", key: "vat", render: (vat) => `${vat}%` },
-    // {
-    //   title: "Mô tả",
-    //   dataIndex: "description",
-    //   key: "description",
-    //   render: (desc) =>
-    //     desc?.length > 10 ? desc.substring(0, 10) + "..." : desc,
-    // },
+
+    { title: "VAT", dataIndex: "vat", key: "vat", render: (vat) => `${formatNumber(vat)}%` },
     { title: "Số lượng tồn", dataIndex: "stock", key: "stock" },
     { title: "Danh mục", dataIndex: "category", key: "category" },
     { title: "Kho", dataIndex: "warehouse", key: "warehouse" },

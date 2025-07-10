@@ -47,7 +47,9 @@ const mapCategoryData = (data) =>
     productCount: item.soLuongSanPham,
     provide: item.nhaCungCap,
     image: item.hinhAnh
-      ? `${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`
+      ? `${"https://web-production-c18cf.up.railway.app"}/storage/${
+          item.hinhAnh
+        }`
       : null,
     warehouse: item.kho?.tenKho || "",
   }));
@@ -97,9 +99,7 @@ export default function Category() {
         formData.append("maDanhMuc", values.categoryCode); //
       }
 
-      if (typeof values.image === "string") {
-        // giữ nguyên ảnh cũ
-      } else if (values.image instanceof File) {
+      if (values.image && values.image instanceof Blob) {
         formData.append("hinhAnh", values.image);
       }
 
@@ -128,13 +128,20 @@ export default function Category() {
           throw new Error(response?.data?.message || "Cập nhật thất bại");
         }
       } else {
+        console.log(values.image);
         const response = await categoryApi.create(formData);
+        console.log(response.data);
 
         if (response?.data?.success) {
           api.success({
             message: "Tạo mới sản phẩm thành công",
             placement: "topRight",
           });
+
+          const getRes = await categoryApi.getAll();
+          const mapped = mapCategoryData(getRes.data.data);
+          setCategories(mapped);
+          setFilteredCategories(mapped);
         } else {
           throw new Error(response?.data?.message || "Tạo thất bại");
         }
@@ -200,7 +207,9 @@ export default function Category() {
             productCount: item.soLuongSanPham,
             provide: item.nhaCungCap,
             image: item.hinhAnh
-              ? `${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`
+              ? `${"https://web-production-c18cf.up.railway.app"}/storage/${
+                  item.hinhAnh
+                }`
               : null,
             warehouse: item.kho?.tenKho || "",
           }));

@@ -1,6 +1,9 @@
 import "./Bill.scss";
 import { useState, useEffect } from "react";
 import ManagerLayoutSidebar from "../../../layouts/managerLayoutSidebar";
+import billApi from "../../../api/billApi";
+import productApi from "../../../api/productApi";
+import { formatVND } from "../../../utils/formatter";
 import {
   Table,
   Button,
@@ -39,129 +42,61 @@ import moment from "moment";
 const { Header, Content } = Layout;
 const { Option } = Select;
 
-// Sample data
-const sampleInvoices = [
-  {
-    id: "1",
-    invoiceCode: "HD000048",
-    customer: "Khách lẻ",
-    customerPhone: "0123456789",
-    customerAddress: "123 Đường ABC, Quận 1, TP.HCM",
-    discount: 0,
-    totalAmount: 77000,
-    createdAt: "30/06/2025 10:31",
-    paymentMethod: "cash",
-    status: "completed",
-    items: [
-      {
-        id: "1",
-        productName: "Sản phẩm A",
-        quantity: 2,
-        unitPrice: 35000,
-        vat: 0.1,
-        total: 77000,
-      },
-    ],
-    notes: "Giao hàng tận nơi",
-  },
-  {
-    id: "2",
-    invoiceCode: "HD000047",
-    customer: "Anh Giang - Kim Mã",
-    customerPhone: "0987654321",
-    customerAddress: "456 Kim Mã, Ba Đình, Hà Nội",
-    discount: 4000,
-    totalAmount: 40000,
-    createdAt: "28/06/2025 08:56",
-    paymentMethod: "transfer",
-    status: "processing",
-    items: [
-      {
-        id: "1",
-        productName: "Sản phẩm B",
-        quantity: 1,
-        unitPrice: 40000,
-        vat: 0.1,
-        total: 44000,
-      },
-    ],
-  },
-  {
-    id: "3",
-    invoiceCode: "HD000046",
-    customer: "Nguyễn Văn Hải",
-    customerPhone: "0369852147",
-    customerAddress: "789 Lê Lợi, Quận 3, TP.HCM",
-    discount: 0,
-    totalAmount: 0,
-    createdAt: "27/06/2025 08:55",
-    paymentMethod: "transfer",
-    status: "cancelled",
-    items: [],
-  },
-  {
-    id: "4",
-    invoiceCode: "HD000045",
-    customer: "Chị Mai - Tân Bình",
-    customerPhone: "0912345678",
-    customerAddress: "321 Cộng Hòa, Tân Bình, TP.HCM",
-    discount: 10000,
-    totalAmount: 100000,
-    createdAt: "26/06/2025 14:22",
-    paymentMethod: "cash",
-    status: "completed",
-    items: [
-      {
-        id: "1",
-        productName: "Sản phẩm C",
-        quantity: 3,
-        unitPrice: 30000,
-        vat: 0.1,
-        total: 99000,
-      },
-      {
-        id: "2",
-        productName: "Sản phẩm D",
-        quantity: 1,
-        unitPrice: 10000,
-        vat: 0.1,
-        total: 11000,
-      },
-    ],
-    notes: "Khách hàng VIP",
-  },
-  {
-    id: "5",
-    invoiceCode: "HD000044",
-    customer: "Anh Tuấn - Hà Nội",
-    customerPhone: "0987123456",
-    customerAddress: "654 Láng Hạ, Đống Đa, Hà Nội",
-    discount: 0,
-    totalAmount: 165000,
-    createdAt: "25/06/2025 09:15",
-    paymentMethod: "cash",
-    status: "processing",
-    items: [
-      {
-        id: "1",
-        productName: "Sản phẩm E",
-        quantity: 5,
-        unitPrice: 30000,
-        vat: 0.1,
-        total: 165000,
-      },
-    ],
-  },
-];
+const mapInvoiceDetailFromAPI = (hoaDon) => {
+  const donHang = hoaDon.don_hang;
+  const khachHangData = donHang?.khach_hang || hoaDon.khachHang || {};
+
+  const paymentMap = {
+    TienMat: "cash",
+    ChuyenKhoan: "transfer",
+    The: "card",
+  };
+
+  const items =
+    donHang?.chi_tiet_don_hang?.map((item) => ({
+      id: item.san_pham?.id,
+      productName: item.productName || "Không tên",
+      quantity: item.soLuong,
+      unitPrice: item.giaBan,
+      discount: item.giamGia || 0,
+      vat: item.san_pham?.VAT || 0,
+      total: item.tongTien,
+    })) || [];
+
+  return {
+    id: hoaDon.id,
+    invoiceCode: hoaDon.maHoaDon,
+    paymentMethod: paymentMap[hoaDon.phuongThucThanhToan] || "unknown",
+    totalAmount: parseFloat(hoaDon.tongThanhToan),
+    discount: parseFloat(hoaDon.giamGiaSanPham || 0),
+    vat: parseFloat(hoaDon.thueVAT || 0),
+    customer:
+  khachHangData.hoTen ||
+  khachHangData.ten ||
+  khachHangData.name || // ✅ THÊM DÒNG NÀY
+  "Khách lẻ",
+customerPhone:
+  khachHangData.sdt ||
+  khachHangData.soDienThoai ||
+  khachHangData.phone || // ✅ THÊM DÒNG NÀY
+  "",
+    notes: donHang?.ghiChu || "",
+    status: donHang?.trangThai || "completed",
+    createdAt: moment(hoaDon.ngayXuat).format("HH:mm DD/MM/YYYY"),
+    items: items,
+  };
+};
 
 export default function Bill() {
-  const [invoices, setInvoices] = useState(sampleInvoices);
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
-  const [filteredInvoices, setFilteredInvoices] = useState(sampleInvoices);
   const [api, contextHolder] = notification.useNotification();
+  const [productMap, setProductMap] = useState({});
 
   //chuyển trang khi thêm hóa đơn
   const navigate = useNavigate();
@@ -173,82 +108,242 @@ export default function Bill() {
   const watchedItems = useWatch("items", form) || [];
   const watchedDiscount = useWatch("discount", form) || 0;
 
-  const calculatedTotal =
-    watchedItems.reduce((sum, item) => sum + (item?.total || 0), 0) -
-    watchedDiscount;
+  const calculateSubTotal = () => {
+    const items = form.getFieldValue("items") || [];
+    const discount = form.getFieldValue("discount") || 0;
+
+    const sum = items.reduce((total, item) => {
+      const quantity = item?.quantity || 0;
+      const unitPrice = item?.unitPrice || 0;
+      const vat = item?.vat || 0;
+      return total + quantity * unitPrice * (1 + vat);
+    }, 0);
+
+    return sum - discount;
+  };
+
+  const calculateTongTienHang = () => {
+    const items = form.getFieldValue("items") || [];
+
+    const sum = items.reduce((total, item) => {
+      const quantity = item?.quantity || 0;
+      const unitPrice = item?.unitPrice || 0;
+      const vat = item?.vat || 0;
+      return total + quantity * unitPrice * (1 + vat);
+    }, 0);
+
+    return sum;
+  };
 
   //tạo ra danh sách hóa đơn đã được tìm kiếm qua mã hđ hoặc tên kh
   const searchedInvoices = filteredInvoices.filter(
     (invoice) =>
-      invoice.invoiceCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customer.toLowerCase().includes(searchTerm.toLowerCase())
+      (invoice.invoiceCode || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (invoice.customer || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   //click vào 1 hđ
-  const handleInvoiceClick = (invoice) => {
-    setSelectedInvoice(invoice);
-    form.setFieldsValue({
-      ...invoice,
-      items: invoice.items.map((item) => ({
-        ...item,
-        vat: item.vat ?? 0, // Nếu vat chưa có thì set 0
-      })),
-    });
+  const handleInvoiceClick = async (invoice) => {
+  try {
+    const res = await billApi.getById(invoice.id);
+    const fullInvoice = res.data?.data;
+
+    if (!fullInvoice) {
+      message.error("Không thể lấy chi tiết hóa đơn");
+      return;
+    }
+
+    const hoaDonData = {
+      id: fullInvoice.hoaDon.id,
+      maHoaDon: fullInvoice.hoaDon.maHoaDon,
+      khachHang: fullInvoice.khachHang,
+      phuongThucThanhToan: fullInvoice.hoaDon.phuongThucThanhToan,
+      tongTienHang: fullInvoice.hoaDon.tongTienHang,
+      giamGiaSanPham: fullInvoice.hoaDon.giamGia,
+      thueVAT: fullInvoice.hoaDon.thueVAT,
+      tongThanhToan: fullInvoice.hoaDon.tongThanhToan,
+      ngayXuat: fullInvoice.hoaDon.ngayXuat,
+      don_hang: {
+        khach_hang: fullInvoice.khachHang || {},
+        ghiChu: fullInvoice.ghiChu || "",
+        trangThai: fullInvoice.trangThai || "completed",
+        chi_tiet_don_hang: (fullInvoice.sanPhams || []).map((sp) => ({
+          san_pham: {
+            id: sp.id,
+            VAT: parseFloat(sp.VAT) / 100 || 0,
+          },
+          productName: productMap[sp.id] || "Không tên",
+          soLuong: parseInt(sp.soLuong),
+          giaBan: parseFloat(sp.giaBan),
+          giamGia: parseFloat(sp.giamGia),
+          tongTien: parseFloat(sp.tongTien),
+        })),
+      },
+    };
+
+    const mappedInvoice = mapInvoiceDetailFromAPI(hoaDonData);
+
+    const itemsWithKeys = mappedInvoice.items.map((item, idx) => ({
+      ...item,
+      key: item.id || idx,
+    }));
+
+    const finalInvoice = {
+      ...mappedInvoice,
+      items: itemsWithKeys,
+    };
+
+    setSelectedInvoice(finalInvoice);
+    form.setFieldsValue(finalInvoice);
     setIsModalOpen(true);
-  };
+  } catch (err) {
+    message.error("Không thể lấy chi tiết hóa đơn");
+  }
+};
+
 
   const handleSaveInvoice = async () => {
     try {
       const values = await form.validateFields();
-      const items = values.items || [];
-      const subtotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
-      const totalAmount = subtotal - (values.discount || 0);
 
-      const updatedInvoice = {
-        ...values,
-        totalAmount,
-        items,
+      if (!values.items || values.items.length === 0) {
+        message.error("Hóa đơn phải có ít nhất 1 sản phẩm!");
+        return;
+      }
+
+      const oldIds = selectedInvoice?.items?.map((item) => item.id) || [];
+      const newIds = values.items?.map((item) => item.id) || [];
+      const xoaSanPhamIds = oldIds.filter((id) => !newIds.includes(id));
+
+      const paymentMapReverse = {
+        cash: "TienMat",
+        transfer: "ChuyenKhoan",
+        card: "The",
       };
 
-      //xử lý cập nhật
-      setInvoices((prev) =>
-        prev.map((inv) =>
-          inv.id === selectedInvoice.id ? { ...inv, ...updatedInvoice } : inv
-        )
-      );
-      setIsModalOpen(false);
-      setSelectedInvoice(null);
-      form.resetFields();
-      setTimeout(() => {
+      const payload = {
+        tongTienHang: calculateTongTienHang(),
+        giamGiaSanPham: values.discount || 0,
+        thueVAT: values.vat || 0,
+        tongThanhToan: calculateSubTotal(),
+        phuongThucThanhToan:
+          paymentMapReverse[values.paymentMethod] || "TienMat",
+        ghiChu: values.notes || "",
+        trangThai: values.status || "completed",
+        tenKhachHang: values.customer || "Khách lẻ", // ✅ THÊM
+        soDienThoai: values.customerPhone || "", // ✅ THÊM
+        xoaSanPhamIds: xoaSanPhamIds,
+        sanPhams: values.items.map((item) => ({
+          id: item.id,
+          soLuong: item.quantity,
+          giaBan: item.unitPrice,
+          giamGia: item.discount || 0,
+          tongTien: item.total,
+        })),
+      };
+
+      const res = await billApi.update(selectedInvoice.id, payload);
+
+      if (res.data?.message) {
         api.success({
-          message: "Cập nhật thành công",
+          message: "Cập nhật hóa đơn thành công",
           placement: "topRight",
         });
-      }, 300);
+
+        form.resetFields();
+        setIsModalOpen(false);
+        setSelectedInvoice(null);
+
+        const updated = mapInvoiceDetailFromAPI(res.data.data);
+        const updatedList = invoices.map((inv) =>
+          inv.id === selectedInvoice.id ? updated : inv
+        );
+        setInvoices(updatedList);
+        setFilteredInvoices(updatedList);
+        setSelectedInvoice(updated);
+      } else {
+        throw new Error("Lỗi không xác định");
+      }
     } catch (error) {
       message.error("Vui lòng kiểm tra lại thông tin!");
     }
   };
-  useEffect(() => {
-    setFilteredInvoices(invoices);
-  }, [invoices]);
 
   //xóa hóa đơn
-  const handleDeleteInvoice = () => {
-    if (selectedInvoice) {
-      setInvoices((prev) =>
-        prev.filter((inv) => inv.id !== selectedInvoice.id)
+  const handleDeleteInvoice = async () => {
+    if (!selectedInvoice) return;
+
+    try {
+      await billApi.delete(selectedInvoice.id); // Gọi API xoá từ backend
+
+      // Cập nhật lại danh sách hoá đơn sau khi xoá
+      const updatedList = invoices.filter(
+        (inv) => inv.id !== selectedInvoice.id
       );
+      setInvoices(updatedList);
+      setFilteredInvoices(updatedList);
+
+      api.success({
+        message: "Đã xóa hóa đơn thành công",
+        placement: "topRight",
+      });
+
       setIsModalOpen(false);
       setSelectedInvoice(null);
       form.resetFields();
-      setTimeout(() => {
-        api.success({
-          message: "Đã xóa thành công",
-          placement: "topRight",
-        });
-      }, 300);
+    } catch (error) {
+      message.error("Xoá hóa đơn thất bại!");
     }
+  };
+
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        setLoading(true);
+
+        const res = await billApi.getAll();
+        const list = res.data?.data || [];
+
+        const mapped = list.map(mapInvoiceDetailFromAPI); // Không cần getById nữa nếu đủ rồi
+
+        setInvoices(mapped);
+        setFilteredInvoices(mapped); // quan trọng!
+      } catch (err) {
+        console.error("Lỗi khi tải danh sách hóa đơn:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchProducts = async () => {
+      try {
+        const res = await productApi.getAll(); // hoặc billApi.getAllSanPham nếu bạn dùng chung
+        const products = res.data?.data || [];
+
+        const map = {};
+        products.forEach((sp) => {
+          map[sp.id] = sp.tenSanPham;
+        });
+
+        setProductMap(map);
+      } catch (err) {
+        console.error("Lỗi khi tải danh sách sản phẩm:", err);
+      }
+    };
+
+    fetchProducts();
+    fetchInvoices();
+  }, []);
+
+  const updateItemTotal = (index) => {
+    const items = form.getFieldValue("items") || [];
+    const quantity = items[index]?.quantity || 0;
+    const unitPrice = items[index]?.unitPrice || 0;
+    const vat = items[index]?.vat || 0;
+    const total = quantity * unitPrice * (1 + vat);
+    form.setFieldValue(["items", index, "total"], total);
   };
 
   //in hóa đơn
@@ -282,17 +377,13 @@ export default function Bill() {
       title: "Giảm giá",
       dataIndex: "discount",
       key: "discount",
-      render: (amount) => (
-        <span className="discount">{amount.toLocaleString("vi-VN")}đ</span>
-      ),
+      render: (amount) => <span className="discount">{formatVND(amount)}</span>,
     },
     {
       title: "Thành tiền",
       dataIndex: "totalAmount",
       key: "totalAmount",
-      render: (amount) => (
-        <span className="amount">{amount.toLocaleString("vi-VN")}đ</span>
-      ),
+      render: (amount) => <span className="amount">{formatVND(amount)}</span>,
     },
     {
       title: "Thời gian tạo",
@@ -306,9 +397,11 @@ export default function Bill() {
       render: (method) => {
         switch (method) {
           case "cash":
-            return "Tiền mặt";
+            return "Tiền Mặt";
           case "transfer":
-            return "Chuyển khoản";
+            return "Chuyển Khoản";
+          case "card":
+            return "Thẻ";
           default:
             return "Không xác định";
         }
@@ -373,94 +466,76 @@ export default function Bill() {
       icon: <UserOutlined />,
       children: [
         {
-          key: "cash",
-          label: "Tiền mặt",
+          key: "TienMat",
+          label: "Tiền Mặt",
           icon: <IoIosCash />,
         },
         {
-          key: "transfer",
-          label: "Chuyển khoản",
+          key: "ChuyenKhoan",
+          label: "Chuyển Khoản",
+          icon: <FaMoneyBillTransfer />,
+        },
+        {
+          key: "The",
+          label: "Thẻ",
           icon: <FaMoneyBillTransfer />,
         },
       ],
     },
   ];
 
-  //hàm lọc hóa đơn theo ngày
-  const filterInvoicesByDate = (fromDate, toDate) => {
-    console.log("Filtering from:", fromDate.format("DD/MM/YYYY HH:mm"));
-    console.log("Filtering to:", toDate.format("DD/MM/YYYY HH:mm"));
+  //xử lý lọc theo thời gian
+  const handleTimeFilter = async (key) => {
+    try {
+      setLoading(true);
 
-    const filtered = invoices.filter((invoice) => {
-      const invoiceDate = moment(invoice.createdAt, "DD/MM/YYYY HH:mm");
-      const isInRange = invoiceDate.isBetween(fromDate, toDate, "day", "[]");
-      console.log(
-        `${invoice.invoiceCode} - ${invoiceDate.format(
-          "DD/MM/YYYY HH:mm"
-        )} - In range: ${isInRange}`
+      const res = await billApi.getAll({ params: { thoiGian: key } });
+      const list = res.data?.data || [];
+
+      // Gọi thêm từng chi tiết hóa đơn
+      const details = await Promise.all(
+        list
+          .filter((invoice) => invoice.id && invoice.id > 0)
+          .map((invoice) => billApi.getById(invoice.id))
       );
 
-      return isInRange;
-    });
+      const mapped = details.map((res) =>
+        mapInvoiceDetailFromAPI(res.data.data)
+      );
 
-    console.log(`Found ${filtered.length} invoices in date range`);
-    setFilteredInvoices(filtered);
-  };
-
-  //xử lý lọc theo thời gian
-  const handleTimeFilter = (key) => {
-    let fromDate, toDate;
-
-    switch (key) {
-      case "today":
-        fromDate = moment().startOf("day");
-        toDate = moment().endOf("day");
-        break;
-      case "yesterday":
-        fromDate = moment().subtract(1, "day").startOf("day");
-        toDate = moment().subtract(1, "day").endOf("day");
-        break;
-      case "this-week":
-        fromDate = moment().startOf("week");
-        toDate = moment().endOf("week");
-        break;
-      case "last-week":
-        fromDate = moment().subtract(1, "week").startOf("week");
-        toDate = moment().subtract(1, "week").endOf("week");
-        break;
-      case "this-month":
-        fromDate = moment().startOf("month");
-        toDate = moment().endOf("month");
-        break;
-      case "last-month":
-        fromDate = moment().subtract(1, "month").startOf("month");
-        toDate = moment().subtract(1, "month").endOf("month");
-        break;
-      default:
-        setFilteredInvoices(invoices);
-        return;
+      setFilteredInvoices(mapped);
+    } catch (err) {
+      message.error("Lọc hóa đơn theo thời gian thất bại");
+    } finally {
+      setLoading(false);
     }
-
-    filterInvoicesByDate(fromDate, toDate);
   };
-
 
   //lọc theo phương thức thanh toán
-  const handleMethodFilter = (methodKey) => {
-    const filtered = invoices.filter(
-      (invoice) => invoice.paymentMethod === methodKey
-    );
+  const handleMethodFilter = async (methodKey) => {
+    try {
+      setLoading(true);
 
-    console.log(
-      `Lọc theo phương thức thanh toán: ${methodKey}, kết quả:`,
-      filtered.length
-    );
-    setFilteredInvoices(filtered);
+      const res = await billApi.getAll({ params: { phuongThuc: methodKey } });
+      const list = res.data?.data || [];
 
-    const methodLabel = methodKey === "cash" ? "Tiền mặt" : "Chuyển khoản";
-    message.success(
-      `Đã lọc ${filtered.length} hóa đơn theo phương thức "${methodLabel}"`
-    );
+      // Gọi thêm chi tiết từng hóa đơn
+      const details = await Promise.all(
+        list
+          .filter((invoice) => invoice.id && invoice.id > 0)
+          .map((invoice) => billApi.getById(invoice.id))
+      );
+
+      const mapped = details.map((res) =>
+        mapInvoiceDetailFromAPI(res.data.data)
+      );
+
+      setFilteredInvoices(mapped);
+    } catch (err) {
+      message.error("Lọc hóa đơn theo phương thức thất bại");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Khối in hóa đơn riêng biệt
@@ -469,7 +544,9 @@ export default function Bill() {
 
     return (
       <div id="print-invoice" style={{ display: "none" }}>
-        <h2 className="section-title">Chi tiết hóa đơn - {selectedInvoice.invoiceCode}</h2>
+        <h2 className="section-title">
+          Chi tiết hóa đơn - {selectedInvoice.invoiceCode}
+        </h2>
         <p>Khách hàng: {selectedInvoice.customer}</p>
         <p>SĐT: {selectedInvoice.customerPhone}</p>
 
@@ -484,7 +561,6 @@ export default function Bill() {
               <th>Tên sản phẩm</th>
               <th>Số lượng</th>
               <th>Đơn giá</th>
-              <th>VAT</th>
               <th>Thành tiền</th>
             </tr>
           </thead>
@@ -494,7 +570,6 @@ export default function Bill() {
                 <td>{item.productName}</td>
                 <td>{item.quantity}</td>
                 <td>{item.unitPrice.toLocaleString("vi-VN")}₫</td>
-                <td>{(item.vat * 100).toFixed(0)}%</td>
                 <td>{item.total.toLocaleString("vi-VN")}₫</td>
               </tr>
             ))}
@@ -514,6 +589,7 @@ export default function Bill() {
       </div>
     );
   };
+
 
   return (
     <>
@@ -721,6 +797,7 @@ export default function Bill() {
                       <Select placeholder="Chọn phương thức">
                         <Option value="cash">Tiền mặt</Option>
                         <Option value="transfer">Chuyển khoản</Option>
+                        <Option value="card">Thẻ</Option>
                       </Select>
                     </Form.Item>
                   </Col>
@@ -740,10 +817,9 @@ export default function Bill() {
                         columns={[
                           {
                             title: "Tên sản phẩm",
-                            dataIndex: "productName",
                             render: (_, record, index) => (
                               <Form.Item
-                                name={[record.name, "productName"]}
+                                name={[index, "productName"]}
                                 rules={[
                                   { required: true, message: "Nhập tên!" },
                                 ]}
@@ -755,128 +831,67 @@ export default function Bill() {
                           },
                           {
                             title: "Số lượng",
-                            dataIndex: "quantity",
-                            render: (_, record) => (
+                            render: (_, record, index) => (
                               <Form.Item
-                                name={[record.name, "quantity"]}
+                                name={[index, "quantity"]}
                                 rules={[
-                                  { required: true, message: "Nhập số lượng!" },
+                                  { required: true, message: "Nhập SL!" },
                                 ]}
                                 noStyle
                               >
                                 <InputNumber
-                                  min={0}
-                                  onChange={(val) => {
-                                    const items = form.getFieldValue("items");
-                                    const unitPrice =
-                                      items[record.name]?.unitPrice || 0;
-                                    const vat = items[record.name]?.vat || 0;
-                                    const total = val * unitPrice * (1 + vat);
-                                    form.setFieldValue(
-                                      ["items", record.name, "total"],
-                                      total
-                                    );
-                                  }}
+                                  min={1}
+                                  onChange={() => updateItemTotal(index)}
                                 />
                               </Form.Item>
                             ),
                           },
                           {
                             title: "Đơn giá",
-                            dataIndex: "unitPrice",
-                            render: (_, record) => (
-                              <Form.Item
-                                name={[record.name, "unitPrice"]}
-                                rules={[
-                                  { required: true, message: "Nhập đơn giá!" },
-                                ]}
-                                noStyle
-                              >
-                                <InputNumber
-                                  min={0}
-                                  onChange={(val) => {
-                                    const items = form.getFieldValue("items");
-                                    const quantity =
-                                      items[record.name]?.quantity || 0;
-                                    const vat = items[record.name]?.vat || 0;
-                                    const total = val * quantity * (1 + vat);
-                                    form.setFieldValue(
-                                      ["items", record.name, "total"],
-                                      total
-                                    );
-                                  }}
-                                />
-                              </Form.Item>
-                            ),
-                          },
-                          {
-                            title: "Thuế VAT",
-                            dataIndex: "vat",
-                            render: (_, record) => (
-                              <Form.Item name={[record.name, "vat"]} noStyle>
-                                <InputNumber
-                                  min={0}
-                                  max={1}
-                                  step={0.01}
-                                  formatter={(value) =>
-                                    `${(parseFloat(value || 0) * 100).toFixed(
-                                      0
-                                    )}%`
-                                  }
-                                  parser={(value) =>
-                                    parseFloat(value.replace("%", "")) / 100
-                                  }
-                                  onChange={(val) => {
-                                    const items = form.getFieldValue("items");
-                                    const quantity =
-                                      items[record.name]?.quantity || 0;
-                                    const unitPrice =
-                                      items[record.name]?.unitPrice || 0;
-                                    const total =
-                                      quantity * unitPrice * (1 + val);
-                                    form.setFieldValue(
-                                      ["items", record.name, "total"],
-                                      total
-                                    );
-                                  }}
-                                />
-                              </Form.Item>
-                            ),
+                            render: (_, record, index) => {
+                              const items = form.getFieldValue("items") || [];
+                              const unitPrice = items[index]?.unitPrice || 0;
+                              const vat = items[index]?.vat || 0;
+                              const finalPrice = unitPrice * (1 + vat);
+
+                              return <span>{formatVND(finalPrice)}</span>;
+                            },
                           },
                           {
                             title: "Thành tiền",
-                            dataIndex: "total",
-                            render: (_, record) => (
-                              <Form.Item name={[record.name, "total"]} noStyle>
-                                <InputNumber disabled />
-                              </Form.Item>
-                            ),
+                            render: (_, record, index) => {
+                              const items = form.getFieldValue("items") || [];
+                              const total = items[index]?.total || 0;
+                              return <span>{formatVND(total)}</span>;
+                            },
                           },
                           {
                             title: "Xóa",
-                            render: (_, record) => (
+                            render: (_, record, index) => (
                               <Button
-                                danger
                                 type="text"
+                                danger
                                 icon={<DeleteOutlined />}
-                                onClick={() => remove(record.name)}
+                                onClick={() => remove(fields[index].name)} // ✅ đây mới đúng
                               />
                             ),
                           },
                         ]}
                       />
+
                       <Button
                         block
-                        icon={<PlusOutlined />}
                         type="dashed"
+                        icon={<PlusOutlined />}
                         style={{ marginTop: 12 }}
                         onClick={() =>
                           add({
-                            id: Date.now().toString(),
                             productName: "",
                             quantity: 1,
                             unitPrice: 0,
                             total: 0,
+                            vat: 0,
+                            key: Date.now(),
                           })
                         }
                       >
@@ -902,9 +917,9 @@ export default function Bill() {
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item label="Thành tiền">
+                    <Form.Item label="Tổng tiền">
                       <div className="total-amount">
-                        {calculatedTotal.toLocaleString("vi-VN")}đ
+                        {formatVND(calculateSubTotal())}
                       </div>
                     </Form.Item>
                   </Col>
