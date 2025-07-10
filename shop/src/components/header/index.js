@@ -2,8 +2,8 @@ import "./header.scss";
 import canhbaoImg from "../../assets/img/header/canhbao.png";
 import logo from "../../assets/img/header/logo.png"
 import { Button, Menu } from "antd";
-import { formatVND } from "../../utils";
-import { getCartItems } from "../../utils";
+import { formatVND } from "../../utils/formatter";
+import { getCartItems } from "../../utils/cart";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
