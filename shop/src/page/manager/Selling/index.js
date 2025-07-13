@@ -263,7 +263,7 @@ function Selling() {
         id: selected.id,
         code: selected.maSKU,
         name: selected.tenSanPham,
-        image: `${process.env.REACT_APP_API_URL}/storage/${selected.hinhAnh}`,
+        image: `${"https://web-production-c18cf.up.railway.app"}/storage/${selected.hinhAnh}`,
         quantity: 1,
         price: selected.giaBan,
         discount: 0,
@@ -361,7 +361,7 @@ function Selling() {
                         }}
                       >
                         <img
-                          src={`${process.env.REACT_APP_API_URL}/storage/${item.hinhAnh}`}
+                          src={`${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`}
                           alt={item.tenSanPham}
                           style={{ width: 30, height: 30, objectFit: "cover" }}
                         />
