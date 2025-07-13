@@ -5,12 +5,18 @@ const productApi = {
   create: (data) => axiosClient.post("/san-pham", data),
   update: (id, data) => axiosClient.post(`/san-pham/${id}?_method=POST`, data),
   delete: (id) => axiosClient.delete(`/san-pham/${id}`),
+  getById: (id) => axiosClient.get(`/san-pham/${id}`),
 
   getByCategory: (categoryId) =>
     axiosClient.get(`/danh-muc/${categoryId}/san-pham`),
 
   getByWarehouse: (warehouseId) =>
   axiosClient.get(`/san-pham/kho/${warehouseId}?_=${Date.now()}`),
+
+  search: (query) =>
+    axiosClient.get("/ban-hang/san-pham", {
+      params: { q: query },
+    }),
 };
 
 export default productApi;
