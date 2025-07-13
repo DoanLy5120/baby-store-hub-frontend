@@ -491,7 +491,7 @@ export default function Bill() {
       setLoading(true);
 
       const res = await billApi.getAll({ params: { thoiGian: key } });
-      const list = res.data?.data || []; // paginate nên cần .data.data
+      const list = res.data || []; 
 
       const mapped = list.map(mapInvoiceDetailFromAPI);
       setFilteredInvoices(mapped);
@@ -508,7 +508,7 @@ export default function Bill() {
       setLoading(true);
 
       const res = await billApi.getAll({ params: { phuongThuc: methodKey } });
-      const list = res.data?.data || [];
+      const list = res.data || [];
 
       const mapped = list.map(mapInvoiceDetailFromAPI);
       setFilteredInvoices(mapped);
