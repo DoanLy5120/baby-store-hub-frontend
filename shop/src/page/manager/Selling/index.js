@@ -6,9 +6,13 @@ import { Tooltip, Select } from "antd";
 import { AiFillThunderbolt } from "react-icons/ai";
 import { TbTruckDelivery } from "react-icons/tb";
 import { FaTrashAlt } from "react-icons/fa";
-import Sua from "../../../assets/img/manager/sua.jpg";
 import { Button, Row, Col, Typography, Space, Divider } from "antd";
 import { UserOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { AutoComplete } from "antd";
+import productApi from "../../../api/productApi";
+import customerApi from "../../../api/customerApi";
+import billApi from "../../../api/billApi";
+import { formatVND } from "../../../utils/formatter";
 
 const { TextArea } = Input;
 
@@ -24,33 +28,29 @@ function Selling() {
   //chọn sản phẩm từ tìm kiếm
   const { Option } = Select;
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [invoices, setInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [searchValue, setSearchValue] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  //cấu hình kết quả thanh toán
+  const { Text } = Typography;
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedStaff, setSelectedStaff] = useState("Doãn Ly");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [orderSummary, setOrderSummary] = useState({
+    totalItems: 0,
+    totalAmount: 0,
+    discount: 0,
+    customerPayment: 0,
+  });
 
-  //dữ liệu giải khách hàng
-  const [customers, setCustomers] = useState([
-    { id: 1, name: "Nguyễn Văn A", phone: "0123456789" },
-    { id: 2, name: "Trần Thị B", phone: "0987654321" },
-    { id: 3, name: "Lê Minh C", phone: "0933333333" },
-  ]);
-
-  const onSearchProduct = (value) => {
-    // Giả lập kết quả tìm kiếm và chọn sản phẩm
-    const fakeProduct = {
-      id: Date.now(),
-      code: "SP001",
-      name: value,
-      image: Sua,
-      quantity: 1,
-      price: 100000,
-      discount: 10000,
-      discountType: "vnd", // hoặc "percent"
-      finalPrice: 90000,
-    };
-    setSelectedProducts([...selectedProducts, fakeProduct]);
+  const paymentMethodMap = {
+    cash: "TienMat",
+    transfer: "ChuyenKhoan",
+    card: "The",
   };
+
   //hàm tăng giảm số lượng, xóa sp
   const handleQuantityChange = (id, type) => {
     const updated = selectedProducts.map((prod) =>
@@ -95,17 +95,21 @@ function Selling() {
     handlePriceChange(id, "discountType", type);
   };
 
-  //cấu hình kết quả thanh toán
-  const { Text } = Typography;
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedStaff, setSelectedStaff] = useState("Doãn Ly");
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [orderSummary, setOrderSummary] = useState({
-    totalItems: 0,
-    totalAmount: 0,
-    discount: 0,
-    customerPayment: 0,
-  });
+  const handleSearchProduct = async (value) => {
+    setSearchValue(value);
+    if (!value) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const res = await productApi.search(value);
+      setSuggestions(res.data); // BE trả về array { id, tenSanPham, maSKU, hinhAnh }
+    } catch (err) {
+      console.error("Lỗi tìm kiếm sản phẩm:", err);
+      setSuggestions([]);
+    }
+  };
 
   // Cập nhật thời gian mỗi giây
   useEffect(() => {
@@ -128,82 +132,114 @@ function Selling() {
   };
 
   // Xử lý tìm kiếm khách hàng
-  const handleCustomerSearch = (value) => {
+  const handleCustomerSearch = async (value) => {
     setCustomerSearch(value);
 
-    const result = customers.filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(value.toLowerCase()) ||
-        customer.phone.includes(value)
-    );
+    if (!value) {
+      setFilteredCustomers([]);
+      return;
+    }
 
-    setFilteredCustomers(result);
+    try {
+      const res = await customerApi.timKiem(value);
+      setFilteredCustomers(res.data); // Gán kết quả từ API
+    } catch (error) {
+      console.error("Lỗi tìm kiếm khách hàng:", error);
+      setFilteredCustomers([]);
+    }
   };
 
   // Xử lý thêm khách hàng mới
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     const name = prompt("Nhập tên khách hàng:");
     const phone = prompt("Nhập số điện thoại:");
 
     if (!name || !phone) return;
 
-    const newCustomer = {
-      id: Date.now(),
-      name,
-      phone,
-    };
+    try {
+      const res = await customerApi.themKhachHang({
+        tenKhachHang: name,
+        soDienThoai: phone,
+      });
+      const newCustomer = res.data;
 
-    setCustomers([...customers, newCustomer]);
-    setCustomerSearch(name);
-    setSelectedCustomer(newCustomer);
+      setCustomerSearch(
+        `${newCustomer.tenKhachHang} - ${newCustomer.soDienThoai}`
+      );
+      setSelectedCustomer(newCustomer);
+      setFilteredCustomers([]);
+    } catch (err) {
+      console.error("Lỗi thêm khách hàng:", err);
+    }
   };
 
   // Xử lý thanh toán
-  const handlePayment = () => {
-    if (selectedProducts.length === 0) {
-      return;
+  const handlePayment = async () => {
+    if (selectedProducts.length === 0) return;
+
+    try {
+      const sanPhams = selectedProducts.map((prod) => ({
+        id: prod.id,
+        soLuong: prod.quantity,
+        giaBan: prod.price,
+        giamGia:
+          prod.discountType === "percent"
+            ? (prod.price * prod.discount) / 100
+            : prod.discount,
+      }));
+
+      const payload = {
+        khachHang_id: selectedCustomer?.id ?? null, // null nếu khách lẻ
+        cuaHang_id: 1, // Hoặc lấy từ localStorage/user context
+        phuongThuc: paymentMethodMap[paymentMethod],
+        tongTienHang: orderSummary.totalAmount,
+        tongThanhToan: orderSummary.customerPayment,
+        giamGia: orderSummary.discount,
+        sanPhams,
+      };
+
+      const res = await billApi.thanhToan(payload);
+      const hoaDonId = res.data.hoaDonId;
+
+      // Tạo dữ liệu hóa đơn cho in
+      const hoaDonData = {
+        invoiceCode: res.data.invoiceCode || hoaDonId || "Mã hóa đơn",
+        customer: selectedCustomer?.hoTen || "Khách lẻ",
+        customerPhone: selectedCustomer?.sdt || "",
+        items: selectedProducts.map(prod => ({
+          productName: prod.name,
+          quantity: prod.quantity,
+          unitPrice: prod.price,
+          vat: prod.vat || 0,
+          total: prod.price * prod.quantity,
+        })),
+        discount: orderSummary.discount,
+        totalAmount: orderSummary.customerPayment,
+      };
+      setSelectedInvoice(hoaDonData);
+
+      // Hiển thị thông báo, hoặc redirect, hoặc in hóa đơn
+      console.log("Tạo hóa đơn thành công, ID:", hoaDonId);
+
+      // Reset form
+      setSelectedProducts([]);
+      setSelectedCustomer(null);
+      setCustomerSearch("");
+      setOrderSummary({
+        totalItems: 0,
+        totalAmount: 0,
+        discount: 0,
+        customerPayment: 0,
+      });
+
+      // In hóa đơn nếu cần
+      setTimeout(() => {
+        window.print();
+      }, 300);
+    } catch (error) {
+      console.error("Lỗi thanh toán:", error);
+      alert("Có lỗi khi tạo hóa đơn!");
     }
-
-    const invoice = {
-      invoiceCode: `HD${Date.now()}`, // Mã hóa đơn giả lập
-      createdAt: formatDateTime(new Date()),
-      staff: selectedStaff,
-      customer: selectedCustomer
-        ? selectedCustomer.name
-        : customerSearch || "Khách lẻ",
-      customerPhone: selectedCustomer ? selectedCustomer.phone : "0123456789",
-      items: selectedProducts.map((prod) => ({
-        productName: prod.name,
-        quantity: prod.quantity,
-        unitPrice: prod.finalPrice,
-        vat: 0.1,
-        total: prod.finalPrice * prod.quantity,
-      })),
-      discount: orderSummary.discount,
-      totalAmount: orderSummary.customerPayment,
-    };
-
-    setInvoices((prev) => [...prev, invoice]); // Lưu vào danh sách hóa đơn
-    setSelectedInvoice(invoice); // Dùng để in hóa đơn gần nhất
-
-    setCustomerPoint((prev) => prev + earnedPoint);
-    setEarnedPoint(0);
-
-    // Reset form bán hàng
-    setSelectedProducts([]);
-    setValue("");
-    setCustomerSearch("");
-    setOrderSummary({
-      totalItems: 0,
-      totalAmount: 0,
-      discount: 0,
-      customerPayment: 0,
-    });
-
-    // Đợi DOM cập nhật rồi mới in
-    setTimeout(() => {
-      window.print();
-    }, 300);
   };
 
   useEffect(() => {
@@ -216,6 +252,32 @@ function Selling() {
       return () => clearTimeout(timeout);
     }
   }, [selectedInvoice]);
+
+  const handleSelectProduct = async (productId) => {
+    try {
+      const res = await productApi.getById(productId);
+      const selected = res.data?.data;
+      if (!selected) return;
+
+      const productToAdd = {
+        id: selected.id,
+        code: selected.maSKU,
+        name: selected.tenSanPham,
+        image: `${"https://web-production-c18cf.up.railway.app"}/storage/${selected.hinhAnh}`,
+        quantity: 1,
+        price: selected.giaBan,
+        discount: 0,
+        discountType: "vnd",
+        finalPrice: selected.giaBan,
+      };
+
+      setSelectedProducts((prev) => [...prev, productToAdd]);
+      setSearchValue("");
+      setSuggestions([]);
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin sản phẩm:", error);
+    }
+  };
 
   // Danh sách nhân viên mẫu
   const staffList = ["Doãn Ly", "Nguyễn Văn A", "Trần Thị B", "Lê Minh C"];
@@ -284,10 +346,34 @@ function Selling() {
           <div className="selling__quick">
             <div className="selling__search">
               <div className="selling__search-btn">
-                <Search
-                  placeholder="Tìm hàng hóa"
-                  onSearch={onSearchProduct}
-                  enterButton
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  placeholder="Tìm hàng hóa theo tên hoặc mã"
+                  value={searchValue}
+                  options={suggestions.map((item) => ({
+                    value: item.id,
+                    label: (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <img
+                          src={`${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`}
+                          alt={item.tenSanPham}
+                          style={{ width: 30, height: 30, objectFit: "cover" }}
+                        />
+                        <span>
+                          {item.maSKU} - {item.tenSanPham}
+                        </span>
+                      </div>
+                    ),
+                  }))}
+                  onSelect={handleSelectProduct}
+                  onSearch={handleSearchProduct}
+                  onChange={setSearchValue}
                 />
               </div>
               <hr style={{ marginTop: "10px" }} />
@@ -324,9 +410,11 @@ function Selling() {
                         <Tooltip
                           placement="bottom"
                           arrow={true}
-                          overlayInnerStyle={{
-                            backgroundColor: "#fff",
-                            border: "1px solid #ccc",
+                          styles={{
+                            body: {
+                              backgroundColor: "#fff",
+                              border: "1px solid #ccc",
+                            },
                           }}
                           color="#fff"
                           title={
@@ -386,16 +474,13 @@ function Selling() {
                           }
                         >
                           <button className="price-button">
-                            {product.finalPrice.toLocaleString()}đ
+                            {formatVND(product.discount)}
                           </button>
                         </Tooltip>
                       </div>
 
                       <div className="product-total">
-                        {(
-                          product.finalPrice * product.quantity
-                        ).toLocaleString()}
-                        đ
+                        {formatVND(product.finalPrice * product.quantity)}
                       </div>
                       <button
                         className="product-delete"
@@ -430,7 +515,7 @@ function Selling() {
                           onChange={setSelectedStaff}
                           className="staff-select"
                           suffixIcon={<UserOutlined />}
-                          bordered={false}
+                          variant="borderless"
                         >
                           {staffList.map((staff) => (
                             <Option key={staff} value={staff}>
@@ -473,12 +558,16 @@ function Selling() {
                           key={cus.id}
                           className="customer-item"
                           onClick={() => {
-                            setCustomerSearch(`${cus.name} - ${cus.phone}`);
-                            setSelectedCustomer(cus); // lưu thông tin KH
+                            setCustomerSearch(`${cus.hoTen} - ${cus.sdt}`);
+                            setSelectedCustomer({
+                              id: cus.id || cus.khachHang_id || cus.maKhachHang, // sửa chỗ này
+                              hoTen: cus.hoTen,
+                              sdt: cus.sdt,
+                            });
                             setFilteredCustomers([]);
                           }}
                         >
-                          {cus.name} - {cus.phone}
+                          {cus.hoTen} - {cus.sdt}
                         </div>
                       ))}
                     </div>
@@ -602,7 +691,8 @@ function Selling() {
                         >
                           <Space direction="horizontal">
                             <Radio value="cash">Tiền mặt</Radio>
-                            <Radio value="bank">Chuyển khoản</Radio>
+                            <Radio value="transfer">Chuyển khoản</Radio>
+                            <Radio value="card">Thẻ</Radio>
                           </Space>
                         </Radio.Group>
                       </Col>
@@ -633,7 +723,7 @@ function Selling() {
               <div className="selling__search-btn">
                 <Search
                   placeholder="Tìm hàng hóa"
-                  onSearch={onSearchProduct}
+                  onSearch={handleSearchProduct}
                   enterButton
                 />
               </div>
@@ -656,7 +746,7 @@ function Selling() {
     if (!selectedInvoice) return null;
 
     return (
-      <div id="print-invoice" style={{ display: "none" }}>
+      <div id="print-invoice">
         <h2 className="section-title">
           Chi tiết hóa đơn - {selectedInvoice.invoiceCode}
         </h2>
@@ -674,7 +764,6 @@ function Selling() {
               <th>Tên sản phẩm</th>
               <th>Số lượng</th>
               <th>Đơn giá</th>
-              <th>VAT</th>
               <th>Thành tiền</th>
             </tr>
           </thead>
@@ -684,7 +773,6 @@ function Selling() {
                 <td>{item.productName}</td>
                 <td>{item.quantity}</td>
                 <td>{item.unitPrice.toLocaleString("vi-VN")}₫</td>
-                <td>{(item.vat * 100).toFixed(0)}%</td>
                 <td>{item.total.toLocaleString("vi-VN")}₫</td>
               </tr>
             ))}
@@ -707,10 +795,8 @@ function Selling() {
 
   return (
     <>
-      {renderPrintableInvoice()}
       <div className="container">
         <div className="selling__content">{renderContent()}</div>
-
         <footer className="selling__choose">
           <Tabs
             items={tabItems}
@@ -720,6 +806,7 @@ function Selling() {
           />
         </footer>
       </div>
+      {renderPrintableInvoice()}
     </>
   );
 }

@@ -36,7 +36,6 @@ import { IoIosCash } from "react-icons/io";
 import { FaReplyAll } from "react-icons/fa";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
-import { useWatch } from "antd/es/form/Form";
 import moment from "moment";
 
 const { Header, Content } = Layout;
@@ -44,7 +43,7 @@ const { Option } = Select;
 
 const mapInvoiceDetailFromAPI = (hoaDon) => {
   const donHang = hoaDon.don_hang;
-  const khachHangData = donHang?.khach_hang || hoaDon.khachHang || {};
+  const khachHangData = hoaDon.khachHang || donHang?.khach_hang || {};
 
   const paymentMap = {
     TienMat: "cash",
@@ -53,15 +52,19 @@ const mapInvoiceDetailFromAPI = (hoaDon) => {
   };
 
   const items =
-    donHang?.chi_tiet_don_hang?.map((item) => ({
-      id: item.san_pham?.id,
-      productName: item.productName || "Không tên",
-      quantity: item.soLuong,
-      unitPrice: item.giaBan,
-      discount: item.giamGia || 0,
-      vat: item.san_pham?.VAT || 0,
-      total: item.tongTien,
-    })) || [];
+    donHang?.chi_tiet_don_hang?.map((item) => {
+      const vat = item.san_pham?.VAT || 0;
+      const unitPrice = item.giaBan ; 
+      return {
+        id: item.san_pham?.id,
+        productName: item.productName || "Không tên",
+        quantity: item.soLuong,
+        unitPrice: unitPrice, 
+        discount: item.giamGia || 0,
+        vat: vat,
+        total: unitPrice * item.soLuong, 
+      };
+    }) || [];
 
   return {
     id: hoaDon.id,
@@ -71,15 +74,15 @@ const mapInvoiceDetailFromAPI = (hoaDon) => {
     discount: parseFloat(hoaDon.giamGiaSanPham || 0),
     vat: parseFloat(hoaDon.thueVAT || 0),
     customer:
-  khachHangData.hoTen ||
-  khachHangData.ten ||
-  khachHangData.name || // ✅ THÊM DÒNG NÀY
-  "Khách lẻ",
-customerPhone:
-  khachHangData.sdt ||
-  khachHangData.soDienThoai ||
-  khachHangData.phone || // ✅ THÊM DÒNG NÀY
-  "",
+      khachHangData.hoTen ||
+      khachHangData.ten ||
+      khachHangData.name ||
+      "Khách lẻ",
+    customerPhone:
+      khachHangData.sdt ||
+      khachHangData.soDienThoai ||
+      khachHangData.phone ||
+      "",
     notes: donHang?.ghiChu || "",
     status: donHang?.trangThai || "completed",
     createdAt: moment(hoaDon.ngayXuat).format("HH:mm DD/MM/YYYY"),
@@ -97,16 +100,13 @@ export default function Bill() {
   const [form] = Form.useForm();
   const [api, contextHolder] = notification.useNotification();
   const [productMap, setProductMap] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
 
   //chuyển trang khi thêm hóa đơn
   const navigate = useNavigate();
   const handleAddNewInvoice = () => {
     navigate("/manager/ban-hang");
   };
-
-  //tính tổng thành tiền khi thêm sp trong modal
-  const watchedItems = useWatch("items", form) || [];
-  const watchedDiscount = useWatch("discount", form) || 0;
 
   const calculateSubTotal = () => {
     const items = form.getFieldValue("items") || [];
@@ -115,8 +115,7 @@ export default function Bill() {
     const sum = items.reduce((total, item) => {
       const quantity = item?.quantity || 0;
       const unitPrice = item?.unitPrice || 0;
-      const vat = item?.vat || 0;
-      return total + quantity * unitPrice * (1 + vat);
+      return total + quantity * unitPrice;
     }, 0);
 
     return sum - discount;
@@ -146,63 +145,66 @@ export default function Bill() {
 
   //click vào 1 hđ
   const handleInvoiceClick = async (invoice) => {
-  try {
-    const res = await billApi.getById(invoice.id);
-    const fullInvoice = res.data?.data;
+    try {
+      const res = await billApi.getById(invoice.id);
+      const fullInvoice = res.data?.data;
 
-    if (!fullInvoice) {
+      if (!fullInvoice) {
+        message.error("Không thể lấy chi tiết hóa đơn");
+        return;
+      }
+
+      const hoaDonData = {
+        id: fullInvoice.hoaDon.id,
+        maHoaDon: fullInvoice.hoaDon.maHoaDon,
+        khachHang: fullInvoice.khachHang,
+        phuongThucThanhToan: fullInvoice.hoaDon.phuongThucThanhToan,
+        tongTienHang: fullInvoice.hoaDon.tongTienHang,
+        giamGiaSanPham: fullInvoice.hoaDon.giamGia,
+        thueVAT: fullInvoice.hoaDon.thueVAT,
+        tongThanhToan: fullInvoice.hoaDon.tongThanhToan,
+        ngayXuat: fullInvoice.hoaDon.ngayXuat,
+        don_hang: {
+          khach_hang: fullInvoice.khachHang || {},
+          ghiChu: fullInvoice.ghiChu || "",
+          trangThai: fullInvoice.trangThai || "completed",
+          chi_tiet_don_hang: (fullInvoice.sanPhams || []).map((sp) => ({
+            san_pham: {
+              id: sp.id,
+              VAT: parseFloat(sp.VAT) / 100 || 0,
+            },
+            productName: productMap[sp.id] || "Không tên",
+            soLuong: parseInt(sp.soLuong),
+            giaBan: parseFloat(sp.giaBan),
+            giamGia: parseFloat(sp.giamGia),
+            tongTien: parseFloat(sp.tongTien),
+          })),
+        },
+      };
+
+      const mappedInvoice = mapInvoiceDetailFromAPI(hoaDonData);
+
+      const itemsWithKeys = mappedInvoice.items.map((item, idx) => ({
+        ...item,
+        key: item.id || idx,
+      }));
+
+      const finalInvoice = {
+        ...mappedInvoice,
+        items: itemsWithKeys,
+        khachHang: {
+          ten: mappedInvoice.customer,
+          soDienThoai: mappedInvoice.customerPhone,
+        },
+      };
+
+      setSelectedInvoice(finalInvoice);
+      form.setFieldsValue(finalInvoice);
+      setIsModalOpen(true);
+    } catch (err) {
       message.error("Không thể lấy chi tiết hóa đơn");
-      return;
     }
-
-    const hoaDonData = {
-      id: fullInvoice.hoaDon.id,
-      maHoaDon: fullInvoice.hoaDon.maHoaDon,
-      khachHang: fullInvoice.khachHang,
-      phuongThucThanhToan: fullInvoice.hoaDon.phuongThucThanhToan,
-      tongTienHang: fullInvoice.hoaDon.tongTienHang,
-      giamGiaSanPham: fullInvoice.hoaDon.giamGia,
-      thueVAT: fullInvoice.hoaDon.thueVAT,
-      tongThanhToan: fullInvoice.hoaDon.tongThanhToan,
-      ngayXuat: fullInvoice.hoaDon.ngayXuat,
-      don_hang: {
-        khach_hang: fullInvoice.khachHang || {},
-        ghiChu: fullInvoice.ghiChu || "",
-        trangThai: fullInvoice.trangThai || "completed",
-        chi_tiet_don_hang: (fullInvoice.sanPhams || []).map((sp) => ({
-          san_pham: {
-            id: sp.id,
-            VAT: parseFloat(sp.VAT) / 100 || 0,
-          },
-          productName: productMap[sp.id] || "Không tên",
-          soLuong: parseInt(sp.soLuong),
-          giaBan: parseFloat(sp.giaBan),
-          giamGia: parseFloat(sp.giamGia),
-          tongTien: parseFloat(sp.tongTien),
-        })),
-      },
-    };
-
-    const mappedInvoice = mapInvoiceDetailFromAPI(hoaDonData);
-
-    const itemsWithKeys = mappedInvoice.items.map((item, idx) => ({
-      ...item,
-      key: item.id || idx,
-    }));
-
-    const finalInvoice = {
-      ...mappedInvoice,
-      items: itemsWithKeys,
-    };
-
-    setSelectedInvoice(finalInvoice);
-    form.setFieldsValue(finalInvoice);
-    setIsModalOpen(true);
-  } catch (err) {
-    message.error("Không thể lấy chi tiết hóa đơn");
-  }
-};
-
+  };
 
   const handleSaveInvoice = async () => {
     try {
@@ -232,8 +234,8 @@ export default function Bill() {
           paymentMapReverse[values.paymentMethod] || "TienMat",
         ghiChu: values.notes || "",
         trangThai: values.status || "completed",
-        tenKhachHang: values.customer || "Khách lẻ", // ✅ THÊM
-        soDienThoai: values.customerPhone || "", // ✅ THÊM
+        tenKhachHang: values.customer || "Khách lẻ",
+        soDienThoai: values.customerPhone || "",
         xoaSanPhamIds: xoaSanPhamIds,
         sanPhams: values.items.map((item) => ({
           id: item.id,
@@ -276,9 +278,8 @@ export default function Bill() {
     if (!selectedInvoice) return;
 
     try {
-      await billApi.delete(selectedInvoice.id); // Gọi API xoá từ backend
+      await billApi.delete(selectedInvoice.id);
 
-      // Cập nhật lại danh sách hoá đơn sau khi xoá
       const updatedList = invoices.filter(
         (inv) => inv.id !== selectedInvoice.id
       );
@@ -304,12 +305,12 @@ export default function Bill() {
         setLoading(true);
 
         const res = await billApi.getAll();
-        const list = res.data?.data || [];
+        const list = res.data || [];
 
-        const mapped = list.map(mapInvoiceDetailFromAPI); // Không cần getById nữa nếu đủ rồi
+        const mapped = list.map(mapInvoiceDetailFromAPI);
 
         setInvoices(mapped);
-        setFilteredInvoices(mapped); // quan trọng!
+        setFilteredInvoices(mapped);
       } catch (err) {
         console.error("Lỗi khi tải danh sách hóa đơn:", err);
       } finally {
@@ -319,7 +320,7 @@ export default function Bill() {
 
     const fetchProducts = async () => {
       try {
-        const res = await productApi.getAll(); // hoặc billApi.getAllSanPham nếu bạn dùng chung
+        const res = await productApi.getAll();
         const products = res.data?.data || [];
 
         const map = {};
@@ -337,12 +338,12 @@ export default function Bill() {
     fetchInvoices();
   }, []);
 
+
   const updateItemTotal = (index) => {
     const items = form.getFieldValue("items") || [];
     const quantity = items[index]?.quantity || 0;
     const unitPrice = items[index]?.unitPrice || 0;
-    const vat = items[index]?.vat || 0;
-    const total = quantity * unitPrice * (1 + vat);
+    const total = quantity * unitPrice;
     form.setFieldValue(["items", index, "total"], total);
   };
 
@@ -355,7 +356,7 @@ export default function Bill() {
       setTimeout(() => {
         window.print();
         printSection.style.display = "none";
-      }, 100); // Đợi 1 chút để trình duyệt render xong rồi mới in
+      }, 100);
     }
   };
 
@@ -428,21 +429,21 @@ export default function Bill() {
       label: "Thời gian",
       icon: <CalendarOutlined />,
       children: [
-        { key: "today", label: "Hôm nay", icon: <CalendarOutlined /> },
-        { key: "yesterday", label: "Hôm qua", icon: <CalendarOutlined /> },
-        { key: "this-week", label: "Tuần này", icon: <CalendarOutlined /> },
+        { key: "hom_nay", label: "Hôm nay", icon: <CalendarOutlined /> },
+        { key: "hom_qua", label: "Hôm qua", icon: <CalendarOutlined /> },
+        { key: "tuan_nay", label: "Tuần này", icon: <CalendarOutlined /> },
         {
-          key: "last-week",
+          key: "tuan_truoc",
           label: "Tuần trước",
           icon: <CalendarOutlined />,
         },
         {
-          key: "this-month",
+          key: "thang_nay",
           label: "Tháng này",
           icon: <CalendarOutlined />,
         },
         {
-          key: "last-month",
+          key: "thang_truoc",
           label: "Tháng trước",
           icon: <CalendarOutlined />,
         },
@@ -490,19 +491,9 @@ export default function Bill() {
       setLoading(true);
 
       const res = await billApi.getAll({ params: { thoiGian: key } });
-      const list = res.data?.data || [];
+      const list = res.data?.data || []; // paginate nên cần .data.data
 
-      // Gọi thêm từng chi tiết hóa đơn
-      const details = await Promise.all(
-        list
-          .filter((invoice) => invoice.id && invoice.id > 0)
-          .map((invoice) => billApi.getById(invoice.id))
-      );
-
-      const mapped = details.map((res) =>
-        mapInvoiceDetailFromAPI(res.data.data)
-      );
-
+      const mapped = list.map(mapInvoiceDetailFromAPI);
       setFilteredInvoices(mapped);
     } catch (err) {
       message.error("Lọc hóa đơn theo thời gian thất bại");
@@ -519,17 +510,7 @@ export default function Bill() {
       const res = await billApi.getAll({ params: { phuongThuc: methodKey } });
       const list = res.data?.data || [];
 
-      // Gọi thêm chi tiết từng hóa đơn
-      const details = await Promise.all(
-        list
-          .filter((invoice) => invoice.id && invoice.id > 0)
-          .map((invoice) => billApi.getById(invoice.id))
-      );
-
-      const mapped = details.map((res) =>
-        mapInvoiceDetailFromAPI(res.data.data)
-      );
-
+      const mapped = list.map(mapInvoiceDetailFromAPI);
       setFilteredInvoices(mapped);
     } catch (err) {
       message.error("Lọc hóa đơn theo phương thức thất bại");
@@ -589,7 +570,6 @@ export default function Bill() {
       </div>
     );
   };
-
 
   return (
     <>
@@ -653,9 +633,11 @@ export default function Bill() {
               <Table
                 className="bill__content-table"
                 columns={columns}
-                dataSource={searchedInvoices}
+                dataSource={filteredInvoices}
                 rowKey="id"
                 pagination={{
+                  current: currentPage,
+                  onChange: (page) => setCurrentPage(page),
                   pageSize: 10,
                   showSizeChanger: true,
                   showQuickJumper: true,
@@ -758,7 +740,7 @@ export default function Bill() {
                   <Col span={12}>
                     <Form.Item
                       label="Khách hàng"
-                      name="customer"
+                      name={["khachHang", "ten"]}
                       rules={[
                         {
                           required: true,
@@ -770,7 +752,10 @@ export default function Bill() {
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item label="Số điện thoại" name="customerPhone">
+                    <Form.Item
+                      label="Số điện thoại"
+                      name={["khachHang", "soDienThoai"]}
+                    >
                       <Input placeholder="Số điện thoại khách hàng" />
                     </Form.Item>
                   </Col>
@@ -851,17 +836,16 @@ export default function Bill() {
                             render: (_, record, index) => {
                               const items = form.getFieldValue("items") || [];
                               const unitPrice = items[index]?.unitPrice || 0;
-                              const vat = items[index]?.vat || 0;
-                              const finalPrice = unitPrice * (1 + vat);
-
-                              return <span>{formatVND(finalPrice)}</span>;
+                              return <span>{formatVND(unitPrice)}</span>;
                             },
                           },
                           {
                             title: "Thành tiền",
                             render: (_, record, index) => {
                               const items = form.getFieldValue("items") || [];
-                              const total = items[index]?.total || 0;
+                              const unitPrice = items[index]?.unitPrice || 0;
+                              const quantity = items[index]?.quantity || 0;
+                              const total = unitPrice * quantity;
                               return <span>{formatVND(total)}</span>;
                             },
                           },
