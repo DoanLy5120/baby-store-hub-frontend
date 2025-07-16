@@ -4,7 +4,13 @@ import { Layout } from "antd";
 
 const { Sider, Content } = Layout;
 
-function ManagerLayoutSidebar({ children, sidebarItems, onSidebarClick, title }) {
+function ManagerLayoutSidebar({
+  children,
+  sidebarItems,
+  onSidebarClick,
+  title,
+  disableMarginTop = false,
+}) {
   return (
     <div style={{ minHeight: "100vh" }}>
       {/* Header cố định */}
@@ -54,8 +60,8 @@ function ManagerLayoutSidebar({ children, sidebarItems, onSidebarClick, title })
       {/* Nội dung chính */}
       <div
         style={{
-          marginTop: 80, 
-          marginLeft: 200, 
+          marginTop: disableMarginTop ? 0 : 80,
+          marginLeft: 200,
           backgroundColor: "#f5f7fa",
         }}
       >
