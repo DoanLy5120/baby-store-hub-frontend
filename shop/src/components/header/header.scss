@@ -168,57 +168,39 @@
     }
   }
 
-  .header-content {
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--main);
+  .header-menu-wrapper {
+    width: 100%;
+    background-color: var(--main);
+    overflow-x: auto;
 
-    .header-menu {
-      flex: 1;
+    .custom-menu {
       display: flex;
       justify-content: center;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      background: transparent;
+      border-bottom: none;
+    }
+
+    .ant-menu-overflow-item-rest {
+      display: none !important; // Ẩn dấu ...
+    }
+
+    .ant-menu-item,
+    .ant-menu-submenu {
+      padding: 0 24px;
+      font-size: 1.6rem;
       font-weight: 500;
+    }
 
-      .ant-menu {
-        background: transparent !important; // Không ghi đè
-        border-bottom: none; // Nếu không muốn gạch dưới
-      }
+    .ant-menu-item:hover,
+    .ant-menu-submenu-title:hover {
+      color: var(--primary) !important;
+      transform: translateY(-1px);
+    }
 
-      .ant-menu-item-icon {
-        font-size: 16px;
-        margin-right: 4px;
-        display: inline-flex;
-        align-items: center;
-      }
-
-      .ant-menu-item {
-        padding: 0 20px;
-        background: transparent;
-      }
-
-      .ant-menu-submenu-title {
-        padding: auto;
-        background: transparent;
-      }
-
-      .ant-menu-item:hover {
-        color: #1836b2;
-      }
-
-      .ant-menu-item-selected {
-        color: #1836b2;
-
-        .ant-menu-item-icon {
-          color: #1836b2;
-        }
-      }
-
-      .ant-menu-item:hover {
-        transform: translateY(-2px);
-        color: #1386b2;
-      }
+    .ant-menu-item-selected {
+      color: var(--primary);
     }
   }
 }

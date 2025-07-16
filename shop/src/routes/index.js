@@ -1,5 +1,5 @@
 import { DefaultLayout, EmptyLayout, ManagerLayout } from "../layouts";
-// import HomePage from "../page/public/HomePage/index";
+import HomePage from "../page/public/HomePage/index";
 import Info from "../page/customer/Info";
 import Login from "../page/public/loginPage";
 import Register from "../page/public/registerPage";
@@ -10,8 +10,8 @@ import Category from "../page/manager/Category/index";
 import Product from "../page/manager/Product/index";
 
 const publicRoutes = [
-  // { path: "/", component: HomePage, layout: DefaultLayout },
-  { path: "/", component: Login, layout: EmptyLayout, publicOnly: true },//sau này nhớ đổi thành /login
+  { path: "/", component: HomePage, layout: DefaultLayout },
+  { path: "/login", component: Login, layout: EmptyLayout, publicOnly: true },
   {
     path: "/register",
     component: Register,

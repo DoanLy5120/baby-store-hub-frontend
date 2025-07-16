@@ -10,9 +10,6 @@ const productApi = {
   getByCategory: (categoryId) =>
     axiosClient.get(`/danh-muc/${categoryId}/san-pham`),
 
-  getByWarehouse: (warehouseId) =>
-  axiosClient.get(`/san-pham/kho/${warehouseId}?_=${Date.now()}`),
-
   search: (query) =>
     axiosClient.get("/ban-hang/san-pham", {
       params: { q: query },

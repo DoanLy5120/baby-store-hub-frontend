@@ -33,10 +33,8 @@ import { FaBoxArchive } from "react-icons/fa6";
 import { UploadOutlined } from "@ant-design/icons";
 import { BiSolidCategory } from "react-icons/bi";
 import { AiFillCheckSquare } from "react-icons/ai";
-import { FaWarehouse } from "react-icons/fa";
 import { FaReplyAll } from "react-icons/fa";
 import productApi from "../../../api/productApi";
-import warehouseApi from "../../../api/warehouseApi";
 import categoryApi from "../../../api/categoryApi";
 const { Header, Content } = Layout;
 const { Option } = Select;
@@ -44,7 +42,7 @@ const { Option } = Select;
 const mapProductsFromAPI = (data, categories = [], warehouses = []) =>
   data.map((item) => ({
     id: item.id,
-    productCode: item.id,
+    productCode: item.maSanPham,
     name: item.tenSanPham,
     sku: item.maSKU,
     vat: item.VAT,
@@ -59,10 +57,7 @@ const mapProductsFromAPI = (data, categories = [], warehouses = []) =>
     category:
       categories.find((dm) => dm.id === item.danhMuc_id)?.tenDanhMuc ||
       "Không rõ",
-    warehouse:
-      warehouses.find((kho) => kho.id === item.kho_id)?.tenKho || "Không rõ",
     categoryId: item.danhMuc_id,
-    warehouseId: item.kho_id,
   }));
 
 export default function Product() {
@@ -76,7 +71,6 @@ export default function Product() {
   const [api, contextHolder] = notification.useNotification();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const searchedProducts = filteredProducts.filter(
@@ -98,7 +92,6 @@ export default function Product() {
       description: product.description,
       image: product.image,
       categoryId: product.categoryId,
-      warehouseId: product.warehouseId,
     });
 
     setIsModalOpen(true);
@@ -113,9 +106,8 @@ export default function Product() {
       formData.append("VAT", values.vat || 0);
       formData.append("moTa", values.description || "");
       formData.append("danhMuc_id", values.categoryId);
-      formData.append("kho_id", values.warehouseId);
       formData.append("giaBan", values.price || 0);
-      formData.append("soLuongTon", values.stock || 0); // Đảm bảo trường tên khớp với backend
+      formData.append("soLuongTon", values.stock || 0); 
 
       if (values.image && typeof values.image === "object") {
         formData.append("hinhAnh", values.image); // File
@@ -146,7 +138,6 @@ export default function Product() {
       setFilteredProducts(mapped);
     } catch (err) {
       message.error("Lỗi khi lưu sản phẩm!");
-      console.error("Error saving product:", err); // In lỗi ra console để debug
     }
   };
 
@@ -178,7 +169,6 @@ export default function Product() {
         setFilteredProducts(mapped);
       } catch (err) {
         message.error("Lỗi khi xóa sản phẩm!");
-        console.error("Error deleting product:", err); // In ra lỗi để dễ debug
       }
     }
   };
@@ -187,25 +177,19 @@ export default function Product() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [productRes, categoryRes, warehouseRes] = await Promise.all([
+        const [productRes, categoryRes] = await Promise.all([
           productApi.getAll(),
           categoryApi.getAll(),
-          warehouseApi.getAll(),
         ]);
-
-        console.log("🔍 Product raw from API:", productRes.data.data[0]);
 
         const productData = productRes.data.data;
         const categoryData = categoryRes.data.data;
-        const warehouseData = warehouseRes.data.data;
 
         setCategories(categoryData);
-        setWarehouses(warehouseData);
 
         const mapped = mapProductsFromAPI(
           productData,
           categoryData,
-          warehouseData
         );
         setProducts(mapped);
         setFilteredProducts(mapped);
@@ -231,16 +215,6 @@ export default function Product() {
       })),
     },
     {
-      key: "warehouse",
-      label: "Kho",
-      icon: <FaWarehouse />,
-      children: warehouses.map((kho) => ({
-        key: `warehouse-${kho.id}`,
-        label: kho.tenKho,
-        icon: <FaWarehouse />,
-      })),
-    },
-    {
       key: "status",
       label: "Tình trạng",
       icon: <AiFillCheckSquare />,
@@ -254,20 +228,10 @@ export default function Product() {
   const handleCategoryFilter = async (categoryId) => {
     try {
       const res = await productApi.getByCategory(categoryId);
-      const mapped = mapProductsFromAPI(res.data.data, categories, warehouses);
+      const mapped = mapProductsFromAPI(res.data.data, categories);
       setFilteredProducts(mapped);
     } catch (err) {
       message.error("Lỗi khi lọc theo danh mục");
-    }
-  };
-
-  const handleWarehouseFilter = async (warehouseId) => {
-    try {
-      const res = await productApi.getByWarehouse(warehouseId);
-      const mapped = mapProductsFromAPI(res.data.data, categories, warehouses);
-      setFilteredProducts(mapped);
-    } catch (err) {
-      message.error("Lỗi khi lọc theo kho");
     }
   };
 
@@ -333,9 +297,8 @@ export default function Product() {
     },
 
     { title: "VAT", dataIndex: "vat", key: "vat", render: (vat) => `${formatNumber(vat)}%` },
-    { title: "Số lượng tồn", dataIndex: "stock", key: "stock" },
+    { title: "Số lượng", dataIndex: "stock", key: "stock" },
     { title: "Danh mục", dataIndex: "category", key: "category" },
-    { title: "Kho", dataIndex: "warehouse", key: "warehouse" },
     {
       title: "Tình trạng",
       dataIndex: "stock",
@@ -369,9 +332,6 @@ export default function Product() {
           if (key.startsWith("category-")) {
             const id = key.replace("category-", "");
             handleCategoryFilter(id);
-          } else if (key.startsWith("warehouse-")) {
-            const id = key.replace("warehouse-", "");
-            handleWarehouseFilter(id);
           } else if (key === "near-out" || key === "out") {
             handleStatusFilter(key);
           } else {
@@ -539,7 +499,7 @@ export default function Product() {
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item label="Số lượng tồn" name="stock">
+                  <Form.Item label="Số lượng" name="stock">
                     <InputNumber min={0} style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
@@ -583,17 +543,6 @@ export default function Product() {
                       {categories.map((dm) => (
                         <Option key={dm.id} value={dm.id}>
                           {dm.tenDanhMuc}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Kho" name="warehouseId">
-                    <Select>
-                      {warehouses.map((kho) => (
-                        <Option key={kho.id} value={kho.id}>
-                          {kho.tenKho}
                         </Option>
                       ))}
                     </Select>

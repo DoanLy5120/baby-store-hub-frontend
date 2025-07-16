@@ -59,7 +59,7 @@ function Selling() {
             ...prod,
             quantity:
               type === "inc"
-                ? prod.quantity + 1
+                ? Math.min(prod.quantity + 1, prod.stock)
                 : Math.max(1, prod.quantity - 1),
           }
         : prod
@@ -189,8 +189,7 @@ function Selling() {
       }));
 
       const payload = {
-        khachHang_id: selectedCustomer?.id ?? null, // null nếu khách lẻ
-        cuaHang_id: 1, // Hoặc lấy từ localStorage/user context
+        khachHang_id: selectedCustomer?.id ?? null,
         phuongThuc: paymentMethodMap[paymentMethod],
         tongTienHang: orderSummary.totalAmount,
         tongThanhToan: orderSummary.customerPayment,
@@ -206,7 +205,7 @@ function Selling() {
         invoiceCode: res.data.invoiceCode || hoaDonId || "Mã hóa đơn",
         customer: selectedCustomer?.hoTen || "Khách lẻ",
         customerPhone: selectedCustomer?.sdt || "",
-        items: selectedProducts.map(prod => ({
+        items: selectedProducts.map((prod) => ({
           productName: prod.name,
           quantity: prod.quantity,
           unitPrice: prod.price,
@@ -263,12 +262,15 @@ function Selling() {
         id: selected.id,
         code: selected.maSKU,
         name: selected.tenSanPham,
-        image: `${"https://web-production-c18cf.up.railway.app"}/storage/${selected.hinhAnh}`,
+        image: `${"https://web-production-c18cf.up.railway.app"}/storage/${
+          selected.hinhAnh
+        }`,
         quantity: 1,
         price: selected.giaBan,
         discount: 0,
         discountType: "vnd",
         finalPrice: selected.giaBan,
+        stock: selected.soLuong,
       };
 
       setSelectedProducts((prev) => [...prev, productToAdd]);
@@ -361,7 +363,9 @@ function Selling() {
                         }}
                       >
                         <img
-                          src={`${"https://web-production-c18cf.up.railway.app"}/storage/${item.hinhAnh}`}
+                          src={`${"https://web-production-c18cf.up.railway.app"}/storage/${
+                            item.hinhAnh
+                          }`}
                           alt={item.tenSanPham}
                           style={{ width: 30, height: 30, objectFit: "cover" }}
                         />
@@ -402,6 +406,7 @@ function Selling() {
                           onClick={() =>
                             handleQuantityChange(product.id, "inc")
                           }
+                          disabled={product.quantity >= product.stock}
                         >
                           +
                         </button>
