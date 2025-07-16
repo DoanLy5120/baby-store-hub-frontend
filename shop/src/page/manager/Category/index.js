@@ -214,7 +214,7 @@ export default function Category() {
             warehouse: item.kho?.tenKho || "",
           }));
           setCategories(fetched);
-          setFilteredCategories(fetched); // ✅ cập nhật lọc ban đầu
+          setFilteredCategories(fetched); 
         }
       } catch (error) {
         message.error("Lỗi khi tải danh mục");

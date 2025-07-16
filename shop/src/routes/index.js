@@ -9,6 +9,7 @@ import Bill from "../page/manager/Bill/index";
 import Category from "../page/manager/Category/index";
 import Product from "../page/manager/Product/index";
 import WareHouse from "../page/manager/WareHouse/index";
+import Provider from "../page/manager/Provider/index";
 
 const publicRoutes = [
   // { path: "/", component: HomePage, layout: DefaultLayout },
@@ -29,6 +30,7 @@ const privateRoutes = [
   { path: "/manager/hang-hoa/danh-muc", component: Category, layout: null },
   { path: "/manager/hang-hoa/san-pham", component: Product, layout: null },
   { path: "/manager/hang-hoa/kiem-kho", component: WareHouse, layout: null },
+  { path: "/manager/giao-dich/nha-cung-cap", component: Provider, layout: ManagerLayout },
 ];
 
 export { publicRoutes, privateRoutes };
