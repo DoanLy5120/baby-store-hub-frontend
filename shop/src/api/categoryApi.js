@@ -1,4 +1,4 @@
-// src/api/categoryApi.js
+
 import axiosClient from "./axiosClient";
 
 const categoryApi = {

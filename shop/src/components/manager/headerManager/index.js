@@ -82,6 +82,11 @@ const navbarManager = [
         key: "manager/giao-dich/van-don",
         icon: <MdLocalShipping />,
       },
+      {
+        label: "Nhà cung cấp",
+        key: "manager/giao-dich/nha-cung-cap",
+        icon: <MdLocalShipping />,
+      },
     ],
   },
   {
