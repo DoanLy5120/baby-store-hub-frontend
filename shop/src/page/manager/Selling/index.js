@@ -256,7 +256,12 @@ function Selling() {
     try {
       const res = await productApi.getById(productId);
       const selected = res.data?.data;
+      console.log("Dữ liệu sản phẩm từ API:", selected);
       if (!selected) return;
+
+      const giaBan = Number(selected.giaBan || 0);
+      const VAT = Number(selected.VAT || 0);
+      const giaDaVAT = Math.round(giaBan * (1 + VAT / 100));
 
       const productToAdd = {
         id: selected.id,
@@ -266,11 +271,12 @@ function Selling() {
           selected.hinhAnh
         }`,
         quantity: 1,
-        price: selected.giaBan,
+        price: giaDaVAT,
         discount: 0,
         discountType: "vnd",
-        finalPrice: selected.giaBan,
-        stock: selected.soLuong,
+        finalPrice: giaDaVAT,
+        stock: Number(selected.soLuongTon || 0),
+        vat: VAT,
       };
 
       setSelectedProducts((prev) => [...prev, productToAdd]);
