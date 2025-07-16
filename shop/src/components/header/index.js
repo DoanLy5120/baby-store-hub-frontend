@@ -1,6 +1,6 @@
 import "./header.scss";
 import canhbaoImg from "../../assets/img/header/canhbao.png";
-import logo from "../../assets/img/header/logo.png"
+import logo from "../../assets/img/header/logo.png";
 import { Button, Menu } from "antd";
 import { formatVND } from "../../utils/formatter";
 import { getCartItems } from "../../utils/cart";
@@ -149,7 +149,11 @@ function Header() {
         <div className="row header-next">
           <div className=" header-search col-lg-9">
             <div className="logo">
-              <img src={logo} alt="logo" style={{width: "200px", height: "90px"}}/>
+              <img
+                src={logo}
+                alt="logo"
+                style={{ width: "200px", height: "90px" }}
+              />
             </div>
             <div className="search">
               <Search
@@ -207,7 +211,10 @@ function Header() {
                       open={openModal}
                       onOk={handleLoginOk}
                       onCancel={handleCancel}
-                      okText=<i class="fa-solid fa-right-to-bracket" style={{ fontSize: "20px", marginRight: "5px" }}></i>
+                      okText=<i
+                        class="fa-solid fa-right-to-bracket"
+                        style={{ fontSize: "20px", marginRight: "5px" }}
+                      ></i>
                       cancelText="Hủy"
                     >
                       <img
@@ -231,19 +238,15 @@ function Header() {
             </div>
           </div>
         </div>
-
-        <div className="row header-content">
-          <div className="col-lg-9">
-            <div className="header-menu">
-              <Menu
-                onClick={onClick}
-                selectedKeys={[current]}
-                mode="horizontal"
-                items={navbarItems}
-              />
-            </div>
-          </div>
-        </div>
+      </div>
+      <div className="header-menu-wrapper">
+        <Menu
+          onClick={onClick}
+          selectedKeys={[current]}
+          mode="horizontal"
+          items={navbarItems}
+          className="custom-menu"
+        />
       </div>
     </div>
   );

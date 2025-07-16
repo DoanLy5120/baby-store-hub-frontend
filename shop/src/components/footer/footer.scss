@@ -1,0 +1,127 @@
+.footer-container {
+  margin: 0 auto;
+  padding: 0 40px;
+  background-color: rgb(90, 103, 248);
+  
+  .footer-section {
+    height: 100%;
+
+    .logo{
+        padding: 20px auto;
+    }
+    
+    .footer-title {
+      color: white !important;
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-top: 40px;
+    }
+    
+    .footer-content p {
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: white;
+    }
+    
+    .phone-number {
+      color: #e99ccc;
+      font-weight: bold;
+    }
+    
+    .connect-text {
+      margin-top: 16px;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    
+    .footer-link {
+      color: white;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .footer-link:hover {
+      color: #ffeb3b;
+      text-decoration: underline;
+    }
+    
+    .social-icons {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .social-icon {
+      font-size: 24px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .social-icon:hover {
+      color: #ffeb3b;
+      transform: scale(1.1);
+    }
+    
+    .zalo-icon {
+      background: white;
+      color: #e91e63;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .zalo-icon:hover {
+      background: #ffeb3b;
+      transform: scale(1.05);
+    }
+  }
+  
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .avakids-footer {
+      padding: 30px 0;
+    }
+  
+    .footer-container {
+      padding: 0 15px;
+    }
+  
+    .footer-title {
+      font-size: 15px;
+      margin-bottom: 15px;
+    }
+  
+    .footer-content p {
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+  
+    .social-icons {
+      gap: 10px;
+    }
+  
+    .social-icon {
+      font-size: 20px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .footer-title {
+      font-size: 14px;
+    }
+  
+    .footer-content p {
+      font-size: 12px;
+    }
+  }
+}
+

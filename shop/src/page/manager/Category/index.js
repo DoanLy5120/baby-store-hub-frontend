@@ -27,9 +27,7 @@ import {
 } from "@ant-design/icons";
 import categoryApi from "../../../api/categoryApi";
 import providerApi from "../../../api/providerApi";
-import warehouseApi from "../../../api/warehouseApi";
 import { MdHomeWork } from "react-icons/md";
-import { FaWarehouse } from "react-icons/fa";
 import { FaReplyAll } from "react-icons/fa";
 import { UploadOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
@@ -41,7 +39,7 @@ const { Header, Content } = Layout;
 const mapCategoryData = (data) =>
   data.map((item) => ({
     id: item.id,
-    categoryCode: `DM${item.id.toString().padStart(3, "0")}`,
+    categoryCode: item.maDanhMuc,
     name: item.tenDanhMuc,
     description: item.moTa,
     productCount: item.soLuongSanPham,
@@ -51,7 +49,6 @@ const mapCategoryData = (data) =>
           item.hinhAnh
         }`
       : null,
-    warehouse: item.kho?.tenKho || "",
   }));
 
 export default function Category() {
@@ -64,7 +61,6 @@ export default function Category() {
   const [api, contextHolder] = notification.useNotification();
   const [previewImage, setPreviewImage] = useState(null);
   const [providers, setProviders] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
 
   // Search categories by code or name
   const searchedCategories = filteredCategories.filter(
@@ -91,9 +87,6 @@ export default function Category() {
       formData.append("moTa", values.description || "");
       formData.append("soLuongSanPham", values.productCount || 0);
       formData.append("nhaCungCap", values.provide);
-
-      const warehouse = warehouses.find((w) => w.tenKho === values.warehouse);
-      formData.append("idKho", warehouse?.id?.toString() || "");
 
       if (values.categoryCode) {
         formData.append("maDanhMuc", values.categoryCode); //
@@ -201,7 +194,7 @@ export default function Category() {
         if (response.data.success) {
           const fetched = response.data.data.map((item) => ({
             id: item.id,
-            categoryCode: `DM${item.id.toString().padStart(3, "0")}`,
+            categoryCode: item.maDanhMuc,
             name: item.tenDanhMuc,
             description: item.moTa,
             productCount: item.soLuongSanPham,
@@ -211,10 +204,9 @@ export default function Category() {
                   item.hinhAnh
                 }`
               : null,
-            warehouse: item.kho?.tenKho || "",
           }));
           setCategories(fetched);
-          setFilteredCategories(fetched); // ✅ cập nhật lọc ban đầu
+          setFilteredCategories(fetched); 
         }
       } catch (error) {
         message.error("Lỗi khi tải danh mục");
@@ -230,32 +222,12 @@ export default function Category() {
       }
     };
 
-    const fetchWarehouses = async () => {
-      try {
-        const res = await warehouseApi.getAll();
-        setWarehouses(res.data.data); // tuỳ vào format API của bạn
-      } catch (error) {
-        message.error("Lỗi khi tải danh sách kho");
-      }
-    };
-
     fetchCategories();
     fetchProviders();
-    fetchWarehouses();
   }, []);
 
   // Sidebar items
   const sidebarItems = [
-    {
-      key: "warehouse",
-      label: "Kho",
-      icon: <FaWarehouse />,
-      children: warehouses.map((w) => ({
-        key: w.id,
-        label: w.tenKho,
-        icon: <FaWarehouse />,
-      })),
-    },
     {
       key: "provide",
       label: "Nhà cung cấp",
@@ -281,36 +253,20 @@ export default function Category() {
     setFilteredCategories(filtered);
   };
 
-  // Handle warehouse filter
-  const handleWarehouseFilter = (id) => {
-    const warehouse = warehouses.find((w) => w.id === id);
-    if (!warehouse) {
-      setFilteredCategories(categories);
-      message.warning("Không tìm thấy kho tương ứng");
-      return;
-    }
-
-    const filtered = categories.filter(
-      (cat) => cat.warehouse === warehouse.tenKho
-    );
-    setFilteredCategories(filtered);
-    message.success(`Đã lọc theo kho ${warehouse.tenKho}`);
-  };
-
   // Table columns
   const columns = [
-    { title: "Mã danh mục", dataIndex: "categoryCode", key: "categoryCode" },
-    { title: "Tên danh mục", dataIndex: "name", key: "name" },
-    { title: "Mô tả", dataIndex: "description", key: "description" },
-    { title: "Số sản phẩm", dataIndex: "productCount", key: "productCount" },
     {
       title: "Hình ảnh",
       dataIndex: "image",
       key: "image",
       render: (url) => <img src={url} alt="category" style={{ width: 50 }} />,
     },
+    { title: "Mã danh mục", dataIndex: "categoryCode", key: "categoryCode" },
+    { title: "Tên danh mục", dataIndex: "name", key: "name" },
+    { title: "Mô tả", dataIndex: "description", key: "description" },
+    { title: "Số sản phẩm", dataIndex: "productCount", key: "productCount" },
+    
     { title: "Nhà cung cấp", dataIndex: "provide", key: "provide" },
-    { title: "Kho", dataIndex: "warehouse", key: "warehouse" },
     {
       title: "Thao tác",
       key: "action",
@@ -331,9 +287,7 @@ export default function Category() {
         title="DANH MỤC"
         sidebarItems={sidebarItems}
         onSidebarClick={({ key, keyPath }) => {
-          if (keyPath.includes("warehouse")) {
-            handleWarehouseFilter(key);
-          } else if (keyPath.includes("provide")) {
+          if (keyPath.includes("provide")) {
             handleProviderFilter(key);
           } else {
             setFilteredCategories(categories);
@@ -516,17 +470,6 @@ export default function Category() {
                       {providers.map((prov) => (
                         <Option key={prov.id} value={prov.name}>
                           {prov.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Kho" name="warehouse">
-                    <Select>
-                      {warehouses.map((w) => (
-                        <Option key={w.id} value={w.tenKho}>
-                          {w.tenKho}
                         </Option>
                       ))}
                     </Select>
