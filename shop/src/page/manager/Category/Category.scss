@@ -28,37 +28,6 @@
   padding: 10px;
 }
 
-.sidebar {
-  padding: 45px 14px;
-
-  .sidebar-title {
-    padding: 16px;
-    font-size: 16px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #1890ff;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  .ant-menu {
-    margin-top: 12px;
-    border-right: none;
-
-    .ant-menu-submenu-title {
-      background: #ededed;
-    }
-
-    .ant-menu-submenu {
-      background: #f5f7fa;
-    }
-
-    .ant-menu-item {
-      background: #fff;
-    }
-  }
-}
 
 .category__header {
   background-color: #f5f7fa;
@@ -71,7 +40,7 @@
   top: 80px; 
 
   .search-input {
-    width: 700px;
+    min-width: 900px;
   }
 
   &-action {

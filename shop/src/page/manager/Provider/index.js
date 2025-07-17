@@ -267,14 +267,15 @@ export default function Provider() {
     <>
       {contextHolder}
       <ManagerLayoutSidebar
-        title="QUẢN LÝ NHÀ CUNG CẤP"
+        title="NHÀ CUNG CẤP"
         sidebarItems={sidebarItems}
         onSidebarClick={({ key }) => {
           
           handleProviderFilter(key);
         }}
+        disableMarginTop={true}
       >
-        <div className="provider-page">
+        <div className="provider-page" style={{ marginTop: 0 }}>
           <Header className="provider__header">
             <div className="provider__header-left">
               <Input
