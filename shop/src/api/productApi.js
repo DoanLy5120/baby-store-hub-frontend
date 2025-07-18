@@ -11,9 +11,17 @@ const productApi = {
     axiosClient.get(`/danh-muc/${categoryId}/san-pham`),
 
   search: (query) =>
-    axiosClient.get("/ban-hang/san-pham", {
-      params: { q: query },
+    axiosClient.post("/ban-hang/san-pham", {
+      noiDungTim: query,
     }),
+
+  searchHeader: (keyword) => {
+    return axiosClient.post("/khachHang/san-pham/tim-kiem", {
+      noiDungTim: keyword,
+    });
+  },
+
+  getHotProducts: () => axiosClient.get("/khachHang/san-pham"),
 };
 
 export default productApi;

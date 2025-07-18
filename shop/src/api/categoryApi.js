@@ -21,6 +21,8 @@ const categoryApi = {
     }),
 
   delete: (id) => axiosClient.delete(`/danh-muc/${id}`),
+
+  getHomePage: (config = {}) => axiosClient.get("/khachHang/danh-muc", config),
 };
 
 export default categoryApi;
