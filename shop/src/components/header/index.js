@@ -6,7 +6,7 @@ import { formatVND } from "../../utils/formatter";
 import { getCartItems } from "../../utils/cart";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AiFillHome } from "react-icons/ai";
 import { FaBoxOpen } from "react-icons/fa6";
 import { IoNotifications } from "react-icons/io5";
@@ -14,6 +14,7 @@ import { RiContactsBook3Fill } from "react-icons/ri";
 import { Dropdown, Space, Input, Modal } from "antd";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineShoppingCart } from "react-icons/hi";
+import productApi from "../../api/productApi";
 
 //List navbar
 const navbarItems = [
@@ -64,17 +65,73 @@ const userItems = [
 //search
 const { Search } = Input;
 
-const onSearch = (value, _e, info) =>
-  console.log(info === null || info === void 0 ? void 0 : info.source, value);
-
 function Header() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [current, setCurrent] = useState("");
   const [cartCount, setCartCount] = useState(0);
+  const [suggestions, setSuggestions] = useState([]);
+  const [searchInput, setSearchInput] = useState("");
 
   // Modal login
   const [openModal, setOpenModal] = useState(false);
+
+  const searchRef = useRef(null);
+
+  const onSearch = async (value) => {
+    if (!value) return;
+
+    try {
+      const response = await productApi.searchHeader(value);
+
+      // Điều hướng sang trang kết quả tìm kiếm (nếu có)
+      navigate("khachHang/san-pham/{id}", {
+        state: {
+          keyword: value,
+          results: response,
+        },
+      });
+    } catch (error) {
+      console.error("Lỗi tìm kiếm sản phẩm ở header:", error);
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(async () => {
+      if (!searchInput.trim()) {
+        setSuggestions([]);
+        return;
+      }
+
+      try {
+        const response = await productApi.searchHeader(searchInput);
+        setSuggestions(response.data || []);
+      } catch (error) {
+        console.error("Lỗi tìm kiếm:", error);
+        setSuggestions([]);
+      }
+    }, 500); // Chờ 500ms sau khi dừng gõ
+
+    return () => clearTimeout(delayDebounce); // Xóa timeout nếu người dùng vẫn gõ
+  }, [searchInput]);
+
+  useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (searchRef.current && !searchRef.current.contains(event.target)) {
+      setSuggestions([]);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
 
   const showLoginModal = () => {
     setOpenModal(true);
@@ -156,11 +213,38 @@ function Header() {
               />
             </div>
             <div className="search">
-              <Search
-                placeholder="Nhập sản phẩm cần tìm"
-                onSearch={onSearch}
-                enterButton
-              />
+              <div className="search-wrapper" ref={searchRef}>
+                <Search
+                  placeholder="Tìm sản phẩm..."
+                  value={searchInput}
+                  onChange={handleSearchChange}
+                  enterButton
+                />
+                {suggestions.length > 0 && (
+                  <ul className="suggestions-list">
+                    {suggestions.map((item) => (
+                      <li
+                        key={item.id}
+                        className="suggestion-item"
+                        onClick={() =>
+                          navigate(`/khachHang/san-pham/${item.id}`)
+                        }
+                      >
+                        <img
+                          src={`${"https://web-production-c18cf.up.railway.app"}/storage/${
+                            item.hinhAnh
+                          }`}
+                          alt={item.tenSanPham}
+                          className="suggestion-img"
+                        />
+                        <span className="suggestion-name">
+                          {item.tenSanPham}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
             <div className="header-right">
               <div className="cart">

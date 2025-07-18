@@ -39,7 +39,7 @@ import categoryApi from "../../../api/categoryApi";
 const { Header, Content } = Layout;
 const { Option } = Select;
 
-const mapProductsFromAPI = (data, categories = [], warehouses = []) =>
+const mapProductsFromAPI = (data, categories = []) =>
   data.map((item) => ({
     id: item.id,
     productCode: item.maSanPham,
@@ -137,7 +137,10 @@ export default function Product() {
       setProducts(mapped);
       setFilteredProducts(mapped);
     } catch (err) {
-      message.error("Lỗi khi lưu sản phẩm!");
+      api.success({
+          message: "Lỗi khi lưu sản phẩm!",
+          placement: "topRight",
+        });
     }
   };
 
@@ -168,7 +171,10 @@ export default function Product() {
         setProducts(mapped);
         setFilteredProducts(mapped);
       } catch (err) {
-        message.error("Lỗi khi xóa sản phẩm!");
+        api.warning({
+          message: "Lỗi xóa sản phẩm",
+          placement: "topRight",
+        });
       }
     }
   };
@@ -194,7 +200,10 @@ export default function Product() {
         setProducts(mapped);
         setFilteredProducts(mapped);
       } catch (err) {
-        message.error("Lỗi khi tải dữ liệu sản phẩm hoặc sidebar");
+        api.warning({
+          message: "Lỗi khi tải dữ liệu",
+          placement: "topRight",
+        });
       } finally {
         setLoading(false);
       }
@@ -231,7 +240,10 @@ export default function Product() {
       const mapped = mapProductsFromAPI(res.data.data, categories);
       setFilteredProducts(mapped);
     } catch (err) {
-      message.error("Lỗi khi lọc theo danh mục");
+      api.warning({
+          message: "Lỗi khi lọc dữ liệu",
+          placement: "topRight",
+        });
     }
   };
 

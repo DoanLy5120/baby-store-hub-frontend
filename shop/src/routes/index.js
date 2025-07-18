@@ -1,5 +1,6 @@
 import { DefaultLayout, EmptyLayout, ManagerLayout } from "../layouts";
 import HomePage from "../page/public/HomePage/index";
+import ProductDetailPage from "../page/public/productDetailPage/index"
 import Info from "../page/customer/Info";
 import Login from "../page/public/loginPage";
 import Register from "../page/public/registerPage";
@@ -19,6 +20,7 @@ const publicRoutes = [
     layout: EmptyLayout,
     publicOnly: true,
   },
+  { path: "/san-pham/:id", component: ProductDetailPage, layout: DefaultLayout },
 ];
 
 const privateRoutes = [
