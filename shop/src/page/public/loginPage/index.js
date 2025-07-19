@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../../api/axiosClient";
-import axios from "axios";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -23,7 +22,7 @@ const LoginPage = () => {
       localStorage.setItem("role", vaiTro);
       localStorage.setItem("userId", id);
       localStorage.setItem("isLoggedIn", "true");
-      
+
       if (vaiTro === "QuanLyCuaHang") {
         navigate("/manager");
       } else if (vaiTro === "Admin") {
@@ -35,28 +34,22 @@ const LoginPage = () => {
       }
       window.location.reload();
     } catch (err) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Đăng nhập thất bại!");
-      }
+      setError(err.message);
     }
   };
 
   const handleForgotPassword = async () => {
     try {
-      await axios.post("https://jsonplaceholder.typicode.com/posts", { email });
+      await axiosClient.post("/auth/forgot-password", { email });
       alert("Email đặt lại mật khẩu đã được gửi!");
     } catch (err) {
-      setError("Không thể gửi email");
+      setError(err.message);
     }
   };
 
   return (
     <div className="login-container min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-blue-50 relative overflow-hidden">
-      {/* Main Form Container */}
       <div className="relative z-10 flex w-full max-w-7xl bg-white rounded-3xl overflow-hidden shadow-2xl">
-        {/* Image Section */}
         <div className="hidden md:flex w-1/2 bg-pink-100 relative overflow-hidden">
           <img
             src="https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482760xjD/anh-mo-ta.png"
@@ -82,12 +75,12 @@ const LoginPage = () => {
               <div className="mb-4">
                 <label className="block text-gray-700 mb-2">Email</label>
                 <input
-                  type="email"
+                  
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Nhập email của bạn"
-                  required
+                  
                 />
               </div>
               <div className="mb-4">
@@ -98,7 +91,7 @@ const LoginPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Nhập mật khẩu"
-                  required
+                  
                 />
               </div>
               <div className="flex items-center justify-between mb-4">
@@ -126,27 +119,6 @@ const LoginPage = () => {
                 Đăng Nhập
               </button>
             </form>
-            {/* <div className="mt-6">
-              <div className="flex items-center mb-4">
-                <div className="flex-1 border-t border-gray-300"></div>
-                <span className="px-3 text-gray-500">Hoặc đăng nhập với</span>
-                <div className="flex-1 border-t border-gray-300"></div>
-              </div>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => handleSocialLogin("facebook")}
-                  className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition shadow-md flex items-center justify-center w-12 h-12"
-                >
-                  <i className="fab fa-facebook-f"></i>
-                </button>
-                <button
-                  onClick={() => handleSocialLogin("google")}
-                  className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition shadow-md flex items-center justify-center w-12 h-12"
-                >
-                  <i className="fab fa-google"></i>
-                </button>
-              </div>
-            </div> */}
             <p className="mt-6 text-center text-gray-600">
               Chưa có tài khoản?{" "}
               <span
