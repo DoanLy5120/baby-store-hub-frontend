@@ -18,4 +18,27 @@ axiosClient.interceptors.request.use((config) => {
   return config;
 });
 
+axiosClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    let errorMessage = "Có lỗi xảy ra. Vui lòng thử lại!";
+
+    if (error.response && error.response.data) {
+      if (error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      if (error.response.data.errors) {
+        const errors = error.response.data.errors;
+        errorMessage = Object.values(errors)
+          .flat()
+          .join(", "); 
+      }
+    }
+    return Promise.reject({
+      ...error,
+      message: errorMessage,
+    });
+  }
+);
+
 export default axiosClient;
