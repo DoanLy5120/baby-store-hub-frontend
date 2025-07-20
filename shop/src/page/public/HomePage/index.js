@@ -9,6 +9,7 @@ import {
   Rate,
   Tag,
   notification,
+  InputNumber,
 } from "antd";
 import { Modal, message } from "antd";
 import { useState, useEffect } from "react";
@@ -24,7 +25,6 @@ import { FaList, FaSyncAlt, FaShoppingCart } from "react-icons/fa";
 import { FaIdeal, FaGift, FaTruckFast } from "react-icons/fa6";
 import { BiSolidDiscount } from "react-icons/bi";
 import { MdOutlineScreenSearchDesktop } from "react-icons/md";
-import { VscDebugContinue } from "react-icons/vsc";
 import "./homePage.scss";
 import { formatVND } from "../../../utils/formatter";
 import categoryApi from "../../../api/categoryApi";
@@ -39,19 +39,27 @@ const HomePage = () => {
   const [api, contextHolder] = notification.useNotification();
   const [categoriesSidebar, setCategoriesSidebar] = useState([]);
   const [hotProducts, setHotProducts] = useState([]);
+  const [quantity, setQuantity] = useState(1);
 
   const navigate = useNavigate();
 
   const handleCartClick = (product) => {
     setSelectedProduct(product);
+    setQuantity(1);
     setIsModalVisible(true);
   };
 
   const handleAddToCart = () => {
+    if (quantity > selectedProduct.soLuongTon) {
+      message.warning("Vượt quá số lượng tồn kho");
+      return;
+    }
+
     api.success({
-      message: "Đã thêm vào giỏ hàng",
+      message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
       placement: "topRight",
     });
+
     setIsModalVisible(false);
   };
 
@@ -194,6 +202,7 @@ const HomePage = () => {
 
   return (
     <div className="homepage">
+      {contextHolder}
       <Layout>
         {/* Sidebar */}
         <div className="sidebar">
@@ -423,7 +432,9 @@ const HomePage = () => {
                                 </div>
                                 <div className="price-section">
                                   <span className="current-price">
-                                    {formatVND(product.giaBan)}
+                                    {formatVND(
+                                      product.giaBan * (1 + product.VAT / 100)
+                                    )}
                                   </span>
                                   <div className="product-actions">
                                     <Button
@@ -487,6 +498,18 @@ const HomePage = () => {
               <Rate disabled defaultValue={selectedProduct.rating} /> */}
               <p>Đã bán: 1.4K</p>
               <Rate disabled defaultValue={5} />
+              <div style={{ marginTop: 12 }}>
+                <label>Số lượng:</label>
+                <InputNumber
+                  min={1}
+                  max={selectedProduct.soLuongTon}
+                  value={quantity}
+                  onChange={setQuantity}
+                />
+                <div style={{ color: "#888", marginTop: 12 }}>
+                  Tồn kho: {selectedProduct.soLuongTon}
+                </div>
+              </div>
             </div>
           </div>
         )}
