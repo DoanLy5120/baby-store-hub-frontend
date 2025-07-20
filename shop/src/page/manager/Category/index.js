@@ -36,20 +36,21 @@ const { Option } = Select;
 
 const { Header, Content } = Layout;
 
-const mapCategoryData = (data) =>
-  data.map((item) => ({
-    id: item.id,
-    categoryCode: item.maDanhMuc,
-    name: item.tenDanhMuc,
-    description: item.moTa,
-    productCount: item.soLuongSanPham,
-    provide: item.nhaCungCap,
-    image: item.hinhAnh
-      ? `${"https://web-production-c18cf.up.railway.app"}/storage/${
-          item.hinhAnh
-        }`
-      : null,
-  }));
+const mapCategoryData = (data, providers) =>
+  data.map((item) => {
+    const provider = providers.find((p) => p.id === item.nhaCungCap); 
+    return {
+      id: item.id,
+      categoryCode: item.maDanhMuc,
+      name: item.tenDanhMuc,
+      description: item.moTa,
+      productCount: item.soLuongSanPham,
+      provide: provider?.tenNhaCungCap || "Không rõ",
+      image: item.hinhAnh
+        ? `https://web-production-c18cf.up.railway.app/storage/${item.hinhAnh}`
+        : null,
+    };
+  });
 
 export default function Category() {
   const [categories, setCategories] = useState([]);
@@ -73,7 +74,7 @@ export default function Category() {
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
     form.setFieldsValue({ ...category });
-    setPreviewImage(category.image); // Gán lại preview từ URL hiện có
+    setPreviewImage(category.image); 
     setIsModalOpen(true);
   };
 
@@ -190,23 +191,28 @@ export default function Category() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await categoryApi.getAll();
-        if (response.data.success) {
-          const fetched = response.data.data.map((item) => ({
-            id: item.id,
-            categoryCode: item.maDanhMuc,
-            name: item.tenDanhMuc,
-            description: item.moTa,
-            productCount: item.soLuongSanPham,
-            provide: item.nhaCungCap,
-            image: item.hinhAnh
-              ? `${"https://web-production-c18cf.up.railway.app"}/storage/${
-                  item.hinhAnh
-                }`
-              : null,
-          }));
+        const providerRes = await providerApi.getAll();
+        const providerList = providerRes.data.data;
+        setProviders(providerList);
+
+        const categoryRes = await categoryApi.getAll();
+        if (categoryRes.data.success) {
+          const fetched = categoryRes.data.data.map((item) => {
+            const provider = providerList.find((p) => p.id === item.nhaCungCap); 
+            return {
+              id: item.id,
+              categoryCode: item.maDanhMuc,
+              name: item.tenDanhMuc,
+              description: item.moTa,
+              productCount: item.soLuongSanPham,
+              provide: provider?.tenNhaCungCap || "Không rõ",
+              image: item.hinhAnh
+                ? `https://web-production-c18cf.up.railway.app/storage/${item.hinhAnh}`
+                : null,
+            };
+          });
           setCategories(fetched);
-          setFilteredCategories(fetched); 
+          setFilteredCategories(fetched);
         }
       } catch (error) {
         message.error("Lỗi khi tải danh mục");
@@ -265,7 +271,7 @@ export default function Category() {
     { title: "Tên danh mục", dataIndex: "name", key: "name" },
     { title: "Mô tả", dataIndex: "description", key: "description" },
     { title: "Số sản phẩm", dataIndex: "productCount", key: "productCount" },
-    
+
     { title: "Nhà cung cấp", dataIndex: "provide", key: "provide" },
     {
       title: "Thao tác",
@@ -444,11 +450,11 @@ export default function Category() {
                       listType="picture"
                       showUploadList={false}
                       beforeUpload={(file) => {
-                        form.setFieldValue("image", file); // lưu file để upload
+                        form.setFieldValue("image", file); 
                         const reader = new FileReader();
                         reader.readAsDataURL(file);
                         reader.onload = () => {
-                          setPreviewImage(reader.result); // hiển thị ảnh
+                          setPreviewImage(reader.result); 
                         };
                         return false;
                       }}

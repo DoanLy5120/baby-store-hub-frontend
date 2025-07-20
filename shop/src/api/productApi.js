@@ -22,6 +22,8 @@ const productApi = {
   },
 
   getHotProducts: () => axiosClient.get("/khachHang/san-pham"),
+
+  getByIdForCustomer: (id) => axiosClient.get(`/khachHang/san-pham/${id}`),
 };
 
 export default productApi;

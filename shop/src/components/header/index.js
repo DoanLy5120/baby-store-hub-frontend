@@ -120,18 +120,17 @@ function Header() {
   }, [searchInput]);
 
   useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (searchRef.current && !searchRef.current.contains(event.target)) {
-      setSuggestions([]);
-    }
-  };
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setSuggestions([]);
+      }
+    };
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
-
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const showLoginModal = () => {
     setOpenModal(true);
@@ -226,9 +225,7 @@ function Header() {
                       <li
                         key={item.id}
                         className="suggestion-item"
-                        onClick={() =>
-                          navigate(`/khachHang/san-pham/${item.id}`)
-                        }
+                        onClick={() => navigate(`/san-pham/${item.id}`)}
                       >
                         <img
                           src={`${"https://web-production-c18cf.up.railway.app"}/storage/${
