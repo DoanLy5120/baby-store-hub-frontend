@@ -42,17 +42,23 @@ const mapInventoryCheckSheetData = (data, products) => {
       ngayCanBang: item.ngay_can_bang
         ? moment(item.ngay_can_bang).format("DD/MM/YYYY")
         : "-",
-      tongSoLuongLyThuyet: item.tong_so_luong_ly_thuyet || 0,
-      tongSoLuongThucTe: item.tong_so_luong_thuc_te || 0,
-      tongChenhLech: item.tong_chenh_lech || 0,
-      tongLechTang: item.tong_lech_tang || 0,
-      tongLechGiam: item.tong_lech_giam || 0,
+      tongSoLuongLyThuyet: chiTiet.reduce(
+        (sum, d) => sum + Number(d.so_luong_ly_thuyet || 0), 0),
+      tongSoLuongThucTe: chiTiet.reduce(
+        (sum, d) => sum + Number(d.so_luong_thuc_te || 0), 0),
+      tongChenhLech: chiTiet.reduce(
+        (sum, d) => sum + Number(d.so_chenh_lech || 0), 0),
+      tongLechTang: chiTiet.reduce(
+        (sum, d) => sum + Math.max(d.so_chenh_lech, 0), 0),
+      tongLechGiam: chiTiet.reduce(
+        (sum, d) => sum + Math.min(d.so_chenh_lech, 0), 0),
       trangThai: item.trang_thai,
       ghiChu: item.ghi_chu || "",
       chiTiet: chiTiet.map((detail) => {
-        const product = products.find(
-          (p) => p.numericId === parseInt(detail.san_pham_id)
-        );
+        // const product = products.find(
+        //   (p) => p.numericId === parseInt(detail.san_pham_id)
+        // );
+        const product = products.find((p) => p.id === detail.san_pham_id);
 
         return {
           id: detail.id.toString(),
@@ -91,13 +97,13 @@ export default function InventoryCheckSheet() {
     const fetchData = async () => {
       try {
         const productResponse = await productApi.getAll();
-        const mappedProducts = productResponse.data.data.map(
-          (product, index) => ({
-            ...product,
-            numericId: index + 1,
-          })
-        );
-
+        // const mappedProducts = productResponse.data.data.map(
+        //   (product, index) => ({
+        //     ...product,
+        //     numericId: index + 1,
+        //   })
+        // );
+        const mappedProducts = productResponse.data.data;     // product.id = UUID
         setProducts(mappedProducts);
 
         const sheetResponse = await inventorychecksheetApi.getAll();
@@ -112,7 +118,7 @@ export default function InventoryCheckSheet() {
         } else {
           throw new Error(
             sheetResponse.data.message ||
-              "Không thể lấy danh sách phiếu kiểm kho"
+            "Không thể lấy danh sách phiếu kiểm kho"
           );
         }
       } catch (error) {
@@ -149,18 +155,6 @@ export default function InventoryCheckSheet() {
 
       let response;
       if (selectedSheet) {
-        if (selectedSheet.trangThai === "phieu_tam") {
-          const currentSheet = sheets.find(
-            (sheet) => sheet.id === selectedSheet.id
-          );
-          const chiTietCount = currentSheet?.chiTiet?.length || 0;
-          if (chiTietCount === 0) {
-            throw new Error(
-              "Phiếu kiểm kho phải có ít nhất một sản phẩm để lưu!"
-            );
-          }
-        }
-
         response = await inventorychecksheetApi.update(selectedSheet.id, data);
         if (response.data.success) {
           api.success({
@@ -248,7 +242,12 @@ export default function InventoryCheckSheet() {
 
   const handleAddDetail = (sheet) => {
     setSelectedSheet(sheet);
-    detailForm.resetFields();
+    detailForm.setFieldsValue({
+      maPhieuKiem: sheet.maPhieuKiem,
+      ngayKiem: sheet.ngayKiem,
+      sanPhamId: undefined,
+      soLuongLyThuyet: undefined
+    });
     setIsDetailModalOpen(true);
   };
 
@@ -256,16 +255,17 @@ export default function InventoryCheckSheet() {
     try {
       const values = await detailForm.validateFields();
       const data = {
-        san_pham_id: parseInt(values.sanPhamId, 10),
-        so_luong_ly_thuyet: parseInt(values.soLuongLyThuyet, 10),
-        so_luong_thuc_te: parseInt(values.soLuongThucTe, 10),
+        san_pham_id: values.sanPhamId,
+        // so_luong_ly_thuyet: parseInt(values.soLuongLyThuyet, 10),
+        // so_luong_thuc_te: parseInt(values.soLuongThucTe, 10),
+        so_luong_ly_thuyet: Number(values.soLuongLyThuyet),   // antd InputNumber đã trả về số
+        so_luong_thuc_te: Number(values.soLuongThucTe),
       };
       if (
-        isNaN(data.san_pham_id) ||
-        isNaN(data.so_luong_ly_thuyet) ||
-        isNaN(data.so_luong_thuc_te)
+        Number.isNaN(data.so_luong_ly_thuyet) ||
+        Number.isNaN(data.so_luong_thuc_te)
       ) {
-        throw new Error("Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.");
+        throw new Error("Số lượng phải là số hợp lệ.");
       }
       const response = await inventorychecksheetApi.addDetail(
         selectedSheet.id,
@@ -293,6 +293,8 @@ export default function InventoryCheckSheet() {
         navigate("/login");
       }
     }
+    console.log(await detailForm.getFieldsError());
+
   };
 
   const handleDeleteDetail = async (detailId) => {
@@ -602,11 +604,7 @@ export default function InventoryCheckSheet() {
                 key="save"
                 type="primary"
                 onClick={handleSaveSheet}
-                disabled={
-                  selectedSheet &&
-                  selectedSheet.trangThai === "phieu_tam" &&
-                  selectedSheet.chiTiet.length === 0
-                }
+                disabled={selectedSheet && selectedSheet.trangThai === "phieu_tam" && selectedSheet.chiTiet.length === 0}
               >
                 {selectedSheet ? "Cập nhật" : "Tạo mới"}
               </Button>,
@@ -662,6 +660,30 @@ export default function InventoryCheckSheet() {
             </p>
             <Form form={detailForm} layout="vertical">
               <Form.Item
+                label="Mã phiếu kiểm"
+                name="maPhieuKiem"
+                rules={[
+                  {
+                    required: true,
+                    message: "Vui lòng nhập mã phiếu kiểm!",
+                  },
+                ]}
+              >
+                <Input disabled />
+              </Form.Item>
+              <Form.Item
+                label="Ngày kiểm"
+                name="ngayKiem"
+                rules={[
+                  {
+                    required: true,
+                    message: "Vui lòng chọn ngày kiểm!",
+                  },
+                ]}
+              >
+                <Input disabled />
+              </Form.Item>
+              <Form.Item
                 label="Sản phẩm"
                 name="sanPhamId"
                 rules={[
@@ -671,13 +693,19 @@ export default function InventoryCheckSheet() {
                   },
                 ]}
               >
-                <Select placeholder="Chọn sản phẩm">
+                {/* <Select placeholder="Chọn sản phẩm">
                   {products.map((product) => (
                     <Option key={product.id} value={product.numericId}>
                       {product.tenSanPham}
                     </Option>
                   ))}
-                </Select>
+                </Select> */}
+                <Select placeholder="Chọn sản phẩm">{products.map((product) => (
+                  <Option key={product.id} value={product.id}>
+                    {product.tenSanPham}
+                  </Option>
+                ))}</Select>
+
               </Form.Item>
               <Form.Item
                 label="Số lượng lý thuyết"
