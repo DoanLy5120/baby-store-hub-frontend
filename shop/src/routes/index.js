@@ -11,6 +11,7 @@ import Category from "../page/manager/Category/index";
 import Product from "../page/manager/Product/index";
 import Provider from "../page/manager/Provider/index";
 import InventoryCheckSheet from "../page/manager/InventoryCheckSheet/index";
+// import GoodsReceiptSheet from "../page/manager/GoodsReceiptSheet/index";
 
 const publicRoutes = [
   { path: "/", component: HomePage, layout: DefaultLayout },
@@ -33,6 +34,7 @@ const privateRoutes = [
   { path: "/manager/hang-hoa/san-pham", component: Product, layout: null },
   { path: "/manager/giao-dich/nha-cung-cap", component: Provider, layout: ManagerLayout },
   { path: "/manager/hang-hoa/kiem-kho", component: InventoryCheckSheet, layout: ManagerLayout},
+  // { path: "/manager/giao-dich/nhap-hang", component: GoodsReceiptSheet, layout: ManagerLayout},
 ];
 
 export { publicRoutes, privateRoutes };

@@ -1,4 +1,3 @@
-
 import "./InventoryCheckSheet.scss";
 import { useState, useEffect } from "react";
 import { InputNumber } from "antd";
@@ -51,8 +50,10 @@ const mapInventoryCheckSheetData = (data, products) => {
       trangThai: item.trang_thai,
       ghiChu: item.ghi_chu || "",
       chiTiet: chiTiet.map((detail) => {
-        const product = products.find((p) => p.numericId === parseInt(detail.san_pham_id));
-        
+        const product = products.find(
+          (p) => p.numericId === parseInt(detail.san_pham_id)
+        );
+
         return {
           id: detail.id.toString(),
           sanPhamId: detail.san_pham_id,
@@ -89,24 +90,30 @@ export default function InventoryCheckSheet() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-    
         const productResponse = await productApi.getAll();
-        const mappedProducts = productResponse.data.data.map((product, index) => ({
-          ...product,
-          numericId: index + 1,
-        }));
-    
+        const mappedProducts = productResponse.data.data.map(
+          (product, index) => ({
+            ...product,
+            numericId: index + 1,
+          })
+        );
+
         setProducts(mappedProducts);
 
-    
         const sheetResponse = await inventorychecksheetApi.getAll();
-        
+
         if (sheetResponse.data.success) {
-          const mapped = mapInventoryCheckSheetData(sheetResponse.data.data, mappedProducts);
+          const mapped = mapInventoryCheckSheetData(
+            sheetResponse.data.data,
+            mappedProducts
+          );
           setSheets(mapped);
           setFilteredSheets(mapped);
         } else {
-          throw new Error(sheetResponse.data.message || "Không thể lấy danh sách phiếu kiểm kho");
+          throw new Error(
+            sheetResponse.data.message ||
+              "Không thể lấy danh sách phiếu kiểm kho"
+          );
         }
       } catch (error) {
         message.error(error.message);
@@ -129,24 +136,28 @@ export default function InventoryCheckSheet() {
     setIsModalOpen(true);
   };
 
-  
   const handleSaveSheet = async () => {
     try {
       const values = await form.validateFields();
       const data = {
         ma_phieu_kiem: values.maPhieuKiem,
-        ngay_kiem: values.ngayKiem ? moment(values.ngayKiem).format("YYYY-MM-DD") : undefined,
+        ngay_kiem: values.ngayKiem
+          ? moment(values.ngayKiem).format("YYYY-MM-DD")
+          : undefined,
         ghi_chu: values.ghiChu,
       };
 
       let response;
       if (selectedSheet) {
-        
         if (selectedSheet.trangThai === "phieu_tam") {
-          const currentSheet = sheets.find((sheet) => sheet.id === selectedSheet.id);
+          const currentSheet = sheets.find(
+            (sheet) => sheet.id === selectedSheet.id
+          );
           const chiTietCount = currentSheet?.chiTiet?.length || 0;
           if (chiTietCount === 0) {
-            throw new Error("Phiếu kiểm kho phải có ít nhất một sản phẩm để lưu!");
+            throw new Error(
+              "Phiếu kiểm kho phải có ít nhất một sản phẩm để lưu!"
+            );
           }
         }
 
@@ -172,7 +183,8 @@ export default function InventoryCheckSheet() {
             ngayCanBang: response.data.data.ngay_can_bang
               ? moment(response.data.data.ngay_can_bang).format("DD/MM/YYYY")
               : "-",
-            tongSoLuongLyThuyet: response.data.data.tong_so_luong_ly_thuyet || 0,
+            tongSoLuongLyThuyet:
+              response.data.data.tong_so_luong_ly_thuyet || 0,
             tongSoLuongThucTe: response.data.data.tong_so_luong_thuc_te || 0,
             tongChenhLech: response.data.data.tong_chenh_lech || 0,
             tongLechTang: response.data.data.tong_lech_tang || 0,
@@ -182,13 +194,11 @@ export default function InventoryCheckSheet() {
             chiTiet: response.data.data.chi_tiet || [],
           };
 
-        
           const getRes = await inventorychecksheetApi.getAll();
           const mapped = mapInventoryCheckSheetData(getRes.data.data, products);
           setSheets(mapped);
           setFilteredSheets(mapped);
 
-          
           setSelectedSheet(newSheet);
           setIsModalOpen(false);
           handleAddDetail(newSheet);
@@ -257,7 +267,10 @@ export default function InventoryCheckSheet() {
       ) {
         throw new Error("Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.");
       }
-      const response = await inventorychecksheetApi.addDetail(selectedSheet.id, data);
+      const response = await inventorychecksheetApi.addDetail(
+        selectedSheet.id,
+        data
+      );
       if (response.data.success) {
         api.success({
           message: "Thêm chi tiết phiếu kiểm kho thành công",
@@ -287,7 +300,8 @@ export default function InventoryCheckSheet() {
       const response = await inventorychecksheetApi.deleteDetail(detailId);
       if (response.data.success) {
         api.success({
-          message: response.data.message || "Xóa chi tiết phiếu kiểm kho thành công",
+          message:
+            response.data.message || "Xóa chi tiết phiếu kiểm kho thành công",
           placement: "topRight",
         });
         const getRes = await inventorychecksheetApi.getAll();
@@ -306,8 +320,13 @@ export default function InventoryCheckSheet() {
   const handleBalanceSheet = async (sheetId) => {
     try {
       const currentSheet = sheets.find((sheet) => sheet.id === sheetId);
-      if (currentSheet.trangThai === "phieu_tam" && currentSheet.chiTiet.length === 0) {
-        throw new Error("Phiếu kiểm kho phải có ít nhất một sản phẩm để cân bằng!");
+      if (
+        currentSheet.trangThai === "phieu_tam" &&
+        currentSheet.chiTiet.length === 0
+      ) {
+        throw new Error(
+          "Phiếu kiểm kho phải có ít nhất một sản phẩm để cân bằng!"
+        );
       }
       const response = await inventorychecksheetApi.canBang(sheetId);
       if (response.data.success) {
@@ -352,7 +371,6 @@ export default function InventoryCheckSheet() {
     }
   };
 
-
   const columns = [
     { title: "Mã phiếu kiểm", dataIndex: "maPhieuKiem", key: "maPhieuKiem" },
     { title: "Ngày kiểm", dataIndex: "ngayKiem", key: "ngayKiem" },
@@ -367,11 +385,15 @@ export default function InventoryCheckSheet() {
       dataIndex: "tongSoLuongThucTe",
       key: "tongSoLuongThucTe",
     },
-    { title: "Tổng chênh lệch", dataIndex: "tongChenhLech", key: "tongChenhLech" },
+    {
+      title: "Tổng chênh lệch",
+      dataIndex: "tongChenhLech",
+      key: "tongChenhLech",
+    },
     { title: "Tổng lệch tăng", dataIndex: "tongLechTang", key: "tongLechTang" },
     { title: "Tổng lệch giảm", dataIndex: "tongLechGiam", key: "tongLechGiam" },
     { title: "Trạng thái", dataIndex: "trangThai", key: "trangThai" },
-    { title: "Ghi chú", dataIndex: "ghiChu", key: "ghiChu"},
+    { title: "Ghi chú", dataIndex: "ghiChu", key: "ghiChu" },
     {
       title: "Thao tác",
       key: "action",
@@ -439,6 +461,7 @@ export default function InventoryCheckSheet() {
         title="KIỂM KHO"
         sidebarItems={sidebarItems}
         onSidebarClick={handleSidebarFilter}
+        disableMarginTop={true}
       >
         <div className="inventory-check-sheet-page">
           <div className="inventory-check-sheet__header">
@@ -466,7 +489,9 @@ export default function InventoryCheckSheet() {
             title={
               <Space>
                 <FaWarehouse />
-                <span>Danh sách phiếu kiểm kho ({searchedSheets.length} phiếu)</span>
+                <span>
+                  Danh sách phiếu kiểm kho ({searchedSheets.length} phiếu)
+                </span>
               </Space>
             }
           >
@@ -490,8 +515,12 @@ export default function InventoryCheckSheet() {
                       columns={detailColumns}
                       dataSource={record.chiTiet.filter(
                         (detail) =>
-                          detail.tenSanPham.toLowerCase().includes(detailSearchTerm.toLowerCase()) ||
-                          detail.maSanPham.toLowerCase().includes(detailSearchTerm.toLowerCase())
+                          detail.tenSanPham
+                            .toLowerCase()
+                            .includes(detailSearchTerm.toLowerCase()) ||
+                          detail.maSanPham
+                            .toLowerCase()
+                            .includes(detailSearchTerm.toLowerCase())
                       )}
                       rowKey="id"
                       pagination={false}
@@ -525,7 +554,6 @@ export default function InventoryCheckSheet() {
             />
           </Card>
 
-        
           <Modal
             title={
               <Space>
@@ -556,12 +584,16 @@ export default function InventoryCheckSheet() {
                 key="delete"
                 title="Bạn có chắc chắn muốn xóa phiếu này?"
                 onConfirm={handleDeleteSheet}
-                disabled={!selectedSheet || selectedSheet?.trangThai !== "phieu_tam"}
+                disabled={
+                  !selectedSheet || selectedSheet?.trangThai !== "phieu_tam"
+                }
               >
                 <Button
                   danger
                   icon={<DeleteOutlined />}
-                  disabled={!selectedSheet || selectedSheet?.trangThai !== "phieu_tam"}
+                  disabled={
+                    !selectedSheet || selectedSheet?.trangThai !== "phieu_tam"
+                  }
                 >
                   Xóa
                 </Button>
@@ -570,7 +602,11 @@ export default function InventoryCheckSheet() {
                 key="save"
                 type="primary"
                 onClick={handleSaveSheet}
-                disabled={selectedSheet && selectedSheet.trangThai === "phieu_tam" && selectedSheet.chiTiet.length === 0}
+                disabled={
+                  selectedSheet &&
+                  selectedSheet.trangThai === "phieu_tam" &&
+                  selectedSheet.chiTiet.length === 0
+                }
               >
                 {selectedSheet ? "Cập nhật" : "Tạo mới"}
               </Button>,
@@ -621,7 +657,8 @@ export default function InventoryCheckSheet() {
             ]}
           >
             <p style={{ color: "red", marginBottom: 16 }}>
-              Lưu ý: Vui lòng thêm ít nhất một sản phẩm để hoàn tất phiếu kiểm kho.
+              Lưu ý: Vui lòng thêm ít nhất một sản phẩm để hoàn tất phiếu kiểm
+              kho.
             </p>
             <Form form={detailForm} layout="vertical">
               <Form.Item
