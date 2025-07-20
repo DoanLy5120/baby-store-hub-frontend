@@ -1,0 +1,23 @@
+.goods-receipt-sheet-page {
+  padding: 20px;
+}
+
+.goods-receipt-sheet__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  .search-input{
+    min-width: 900px;
+  }
+}
+
+.goods-receipt-sheet__table {
+  background: #fff;
+  border-radius: 8px;
+}
+
+.search-input {
+  width: 300px;
+}
