@@ -21,27 +21,18 @@ const RegisterPage = () => {
       await axiosClient.post("/auth/register", {
         email: formData.email,
         password: formData.password,
-        hoTen: formData.fullName,
-        sdt: formData.phone,
+        hoTen: formData.hoTen,
+        sdt: formData.sdt,
         password_confirmation: formData.password_confirmation,
-        diaChi: formData.address,
-        ngaySinh: formData.birthday, 
+        diaChi: formData.diaChi,
+        ngaySinh: formData.ngaySinh,
       });
       alert("Đăng ký thành công! Vui lòng đăng nhập.");
       navigate("/login");
     } catch (err) {
-      console.error(err);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Đăng ký thất bại");
-      }
+      setError(err.message);
     }
   };
-
-  // const handleSocialRegister = (provider) => {
-  //   alert(`Đăng ký với ${provider} (giả lập)`);
-  // };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -75,62 +66,56 @@ const RegisterPage = () => {
                 <label className="block text-gray-700 mb-2">Họ và Tên</label>
                 <input
                   type="text"
-                  name="fullName"
-                  value={formData.fullName}
+                  name="hoTen"
+                  value={formData.hoTen}
                   onChange={handleInputChange}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Nhập họ và tên"
-                  required
+                  
                 />
               </div>
               <div className="mb-4">
                 <label className="block text-gray-700 mb-2">Email</label>
                 <input
-                  type="email"
+                  
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Nhập email của bạn"
-                  required
+                  
                 />
               </div>
               <div className="mb-4">
                 <label className="block text-gray-700 mb-2">Địa chỉ</label>
                 <input
                   type="text"
-                  name="address"
-                  value={formData.address}
+                  name="diaChi"
+                  value={formData.diaChi}
                   onChange={handleInputChange}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Nhập địa chỉ của bạn"
-                  required
                 />
               </div>
               <div className="mb-4">
                 <label className="block text-gray-700 mb-2">Ngày sinh</label>
                 <input
                   type="date"
-                  name="birthday"
-                  value={formData.birthday}
+                  name="ngaySinh"
+                  value={formData.ngaySinh}
                   onChange={handleInputChange}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
-                  placeholder="Nhập email của bạn"
-                  required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">
-                  Số điện thoại
-                </label>
+                <label className="block text-gray-700 mb-2">Số điện thoại</label>
                 <input
                   type="tel"
-                  name="phone"
-                  value={formData.phone}
+                  name="sdt"
+                  value={formData.sdt}
                   onChange={handleInputChange}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Nhập số điện thoại"
-                  required
                 />
               </div>
               <div className="mb-4">
@@ -142,13 +127,11 @@ const RegisterPage = () => {
                   onChange={handleInputChange}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Nhập mật khẩu"
-                  required
+                  
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">
-                  Nhập lại mật khẩu
-                </label>
+                <label className="block text-gray-700 mb-2">Nhập lại mật khẩu</label>
                 <input
                   type="password"
                   name="password_confirmation"
@@ -156,7 +139,7 @@ const RegisterPage = () => {
                   onChange={handleInputChange}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300"
                   placeholder="Nhập lại mật khẩu"
-                  required
+                  
                 />
               </div>
               <button
@@ -166,27 +149,6 @@ const RegisterPage = () => {
                 Đăng Ký
               </button>
             </form>
-            {/* <div className="mt-6">
-              <div className="flex items-center mb-4">
-                <div className="flex-1 border-t border-gray-300"></div>
-                <span className="px-3 text-gray-500">Hoặc đăng ký với</span>
-                <div className="flex-1 border-t border-gray-300"></div>
-              </div>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => handleSocialRegister("facebook")}
-                  className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition shadow-md flex items-center justify-center w-12 h-12"
-                >
-                  <i className="fab fa-facebook-f"></i>
-                </button>
-                <button
-                  onClick={() => handleSocialRegister("google")}
-                  className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition shadow-md flex items-center justify-center w-12 h-12"
-                >
-                  <i className="fab fa-google"></i>
-                </button>
-              </div>
-            </div> */}
             <p className="mt-6 text-center text-gray-600">
               Đã có tài khoản?{" "}
               <span
@@ -199,9 +161,6 @@ const RegisterPage = () => {
           </div>
         </div>
       </div>
-
-      {/* <div className="absolute top-1/4 left-1/4 w-8 h-8 rounded-full bg-pink-200 opacity-30 animate-float"></div>
-      <div className="absolute bottom-1/3 right-1/4 w-6 h-6 rounded-full bg-blue-200 opacity-30 animate-float-delay"></div> */}
     </div>
   );
 };

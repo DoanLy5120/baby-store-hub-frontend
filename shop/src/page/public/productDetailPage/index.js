@@ -53,7 +53,7 @@ const ProductDetailPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await productApi.getAll(); 
+        const res = await productApi.getHotProducts(); 
         const allProducts = res.data.data || [];
 
         const filtered = allProducts.filter((item) => item.id !== +id);

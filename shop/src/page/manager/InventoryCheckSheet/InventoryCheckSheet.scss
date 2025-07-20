@@ -1,0 +1,23 @@
+.inventory-check-sheet-page {
+  padding: 20px;
+}
+
+.inventory-check-sheet__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  .search-input{
+    min-width: 900px;
+  }
+}
+
+.inventory-check-sheet__table {
+  background: #fff;
+  border-radius: 8px;
+}
+
+.search-input {
+  width: 300px;
+}
