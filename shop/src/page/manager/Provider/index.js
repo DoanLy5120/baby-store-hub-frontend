@@ -17,6 +17,7 @@ import {
   Row,
   Layout,
   notification,
+  Spin,
 } from "antd";
 import {
   SearchOutlined,
@@ -26,20 +27,25 @@ import {
 } from "@ant-design/icons";
 import providerApi from "../../../api/providerApi";
 import { FaBan, FaBuilding, FaCheckCircle, FaReplyAll } from "react-icons/fa";
+import moment from "moment"; // Added for date formatting
 
 const { Header, Content } = Layout;
 
 const mapProviderData = (data) =>
   data.map((item) => ({
-    id: item.id.toString(), 
+    id: item.id.toString(),
     name: item.tenNhaCungCap,
     taxCode: item.maSoThue || "-",
     phone: item.sdt || "-",
     email: item.email || "-",
     address: item.diaChi || "-",
     status: item.trangThai ? "Hoạt động" : "Ngừng hoạt động",
-    createdAt: item.ngayTao,
-    updatedAt: item.ngayCapNhat,
+    createdAt: item.ngayTao
+      ? moment(item.ngayTao).format("DD/MM/YYYY HH:mm")
+      : "-",
+    updatedAt: item.ngayCapNhat
+      ? moment(item.ngayCapNhat).format("DD/MM/YYYY HH:mm")
+      : "-",
   }));
 
 export default function Provider() {
@@ -48,6 +54,7 @@ export default function Provider() {
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false); // Added for loading state
   const [form] = Form.useForm();
   const [api, contextHolder] = notification.useNotification();
   const navigate = useNavigate();
@@ -57,6 +64,35 @@ export default function Provider() {
       provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       provider.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const fetchProviders = async () => {
+    setLoading(true);
+    try {
+      const response = await providerApi.getAll();
+      if (response.data.success) {
+        const mapped = mapProviderData(response.data.data);
+        setProviders(mapped);
+        setFilteredProviders(mapped);
+      } else {
+        throw new Error(response.data.message || "Lỗi khi tải danh sách");
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+        navigate("/login");
+      } else if (error.response?.status === 404) {
+        message.error("Không tìm thấy API nhà cung cấp!");
+      } else {
+        message.error(error.message || "Lỗi khi tải danh sách nhà cung cấp!");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProviders();
+  }, [navigate]);
 
   const handleProviderClick = (provider) => {
     setSelectedProvider(provider);
@@ -73,6 +109,7 @@ export default function Provider() {
 
   const handleSaveProvider = async () => {
     try {
+      setLoading(true);
       const values = await form.validateFields();
       const data = {
         tenNhaCungCap: values.name,
@@ -106,36 +143,34 @@ export default function Provider() {
         }
       }
 
-      const getRes = await providerApi.getAll();
-      const mapped = mapProviderData(getRes.data.data);
-      setProviders(mapped);
-      setFilteredProviders(mapped);
+      await fetchProviders(); // Refresh the provider list
       setIsModalOpen(false);
       setSelectedProvider(null);
       form.resetFields();
     } catch (error) {
-      
       if (error.response?.status === 401) {
         message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
         navigate("/login");
       } else {
-        message.error(error.response?.data?.message || "Lỗi khi lưu nhà cung cấp. Vui lòng kiểm tra lại!");
+        message.error(
+          error.response?.data?.message || "Lỗi khi lưu nhà cung cấp!"
+        );
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDeleteProvider = async () => {
     try {
+      setLoading(true);
       const response = await providerApi.delete(selectedProvider.id);
       if (response.data.success) {
         api.success({
           message: "Xóa nhà cung cấp thành công",
           placement: "topRight",
         });
-        const getRes = await providerApi.getAll();
-        const mapped = mapProviderData(getRes.data.data);
-        setProviders(mapped);
-        setFilteredProviders(mapped);
+        await fetchProviders();
         setIsModalOpen(false);
         setSelectedProvider(null);
         form.resetFields();
@@ -143,77 +178,22 @@ export default function Provider() {
         throw new Error(response.data.message || "Xóa thất bại");
       }
     } catch (error) {
-      
       if (error.response?.status === 401) {
         message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
         navigate("/login");
       } else {
-        message.error(error.message || "Không thể xóa nhà cung cấp!");
+        message.error(
+          error.response?.data?.message || "Không thể xóa nhà cung cấp!"
+        );
       }
+    } finally {
+      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const fetchProviders = async () => {
-      try {
-        const response = await providerApi.getAll();
-        
-        if (response.data.success) {
-          const mapped = mapProviderData(response.data.data);
-          
-          setProviders(mapped);
-          setFilteredProviders(mapped);
-        } else {
-          throw new Error("API response không thành công");
-        }
-      } catch (error) {
-        if (error.response?.status === 401) {
-          message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
-          navigate("/login");
-        } else if (error.response?.status === 404) {
-          message.error("Không tìm thấy API nhà cung cấp. Vui lòng kiểm tra backend!");
-        } else {
-          message.error("Lỗi khi tải danh sách nhà cung cấp");
-        }
-      }
-    };
-
-    fetchProviders();
-  }, [navigate]);
-
-  const sidebarItems = [
-    {
-      key: "provider",
-      label: "Nhà cung cấp",
-      icon: <FaBuilding />,
-      children: [
-        {
-          key: "all-providers",
-          label: "Tất cả",
-          icon: <FaReplyAll />,
-        },
-        ...providers.map((p) => ({
-          key: p.id.toString(), 
-          label: p.name,
-          icon: <FaBuilding />,
-        })),
-      ],
-    },
-    {
-    key: "status",
-    label: "Trạng thái",
-    icon: <FaCheckCircle />,
-    children: [
-      { key: "status-active", label: "Hoạt động", icon: <FaCheckCircle /> },
-      { key: "status-inactive", label: "Ngừng hoạt động", icon: <FaBan /> },
-    ],
-  },
-  ];
 
   const handleProviderFilter = (key) => {
     if (key === "all-providers") {
       setFilteredProviders(providers);
-    
       message.success("Hiển thị tất cả nhà cung cấp");
       return;
     }
@@ -226,21 +206,22 @@ export default function Provider() {
     }
 
     if (key === "status-inactive") {
-      const inactiveProviders = providers.filter((p) => p.status === "Ngừng hoạt động");
+      const inactiveProviders = providers.filter(
+        (p) => p.status === "Ngừng hoạt động"
+      );
       setFilteredProviders(inactiveProviders);
       message.success("Hiển thị nhà cung cấp Ngừng hoạt động");
       return;
     }
 
-    const provider = providers.find((p) => p.id === key.toString());
-    
-    if (!provider) {
+    const provider = providers.find((p) => p.id === key);
+    if (provider) {
+      setFilteredProviders([provider]);
+      message.success(`Đã lọc theo nhà cung cấp ${provider.name}`);
+    } else {
       setFilteredProviders(providers);
       message.warning("Không tìm thấy nhà cung cấp tương ứng");
-      return;
     }
-    setFilteredProviders([provider]);
-    message.success(`Đã lọc theo nhà cung cấp ${provider.name}`);
   };
 
   const columns = [
@@ -250,6 +231,16 @@ export default function Provider() {
     { title: "Email", dataIndex: "email", key: "email" },
     { title: "Địa chỉ", dataIndex: "address", key: "address" },
     { title: "Trạng thái", dataIndex: "status", key: "status" },
+    {
+      title: "Ngày tạo",
+      dataIndex: "createdAt",
+      key: "createdAt",
+    },
+    {
+      title: "Ngày cập nhật",
+      dataIndex: "updatedAt",
+      key: "updatedAt",
+    },
     {
       title: "Thao tác",
       key: "action",
@@ -263,16 +254,42 @@ export default function Provider() {
     },
   ];
 
+  const sidebarItems = [
+    {
+      key: "provider",
+      label: "Nhà cung cấp",
+      icon: <FaBuilding />,
+      children: [
+        {
+          key: "all-providers",
+          label: "Tất cả",
+          icon: <FaReplyAll />,
+        },
+        ...providers.map((p) => ({
+          key: p.id,
+          label: p.name,
+          icon: <FaBuilding />,
+        })),
+      ],
+    },
+    {
+      key: "status",
+      label: "Trạng thái",
+      icon: <FaCheckCircle />,
+      children: [
+        { key: "status-active", label: "Hoạt động", icon: <FaCheckCircle /> },
+        { key: "status-inactive", label: "Ngừng hoạt động", icon: <FaBan /> },
+      ],
+    },
+  ];
+
   return (
     <>
       {contextHolder}
       <ManagerLayoutSidebar
         title="NHÀ CUNG CẤP"
         sidebarItems={sidebarItems}
-        onSidebarClick={({ key }) => {
-          
-          handleProviderFilter(key);
-        }}
+        onSidebarClick={({ key }) => handleProviderFilter(key)}
         disableMarginTop={true}
       >
         <div className="provider-page" style={{ marginTop: 0 }}>
@@ -321,29 +338,31 @@ export default function Provider() {
                 </Space>
               }
             >
-              <Table
-                className="provider__content-table"
-                columns={columns}
-                dataSource={searchedProviders}
-                rowKey="id"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) =>
-                    `Hiển thị ${range[0]}-${range[1]} của ${total} nhà cung cấp`,
-                }}
-                locale={{
-                  emptyText: (
-                    <div className="empty-state">
-                      <div className="empty-icon">
-                        <FaBuilding />
+              <Spin spinning={loading}>
+                <Table
+                  className="provider__content-table"
+                  columns={columns}
+                  dataSource={searchedProviders}
+                  rowKey="id"
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) =>
+                      `Hiển thị ${range[0]}-${range[1]} của ${total} nhà cung cấp`,
+                  }}
+                  locale={{
+                    emptyText: (
+                      <div className="empty-state">
+                        <div className="empty-icon">
+                          <FaBuilding />
+                        </div>
+                        <div>Không tìm thấy nhà cung cấp nào</div>
                       </div>
-                      <div>Không tìm thấy nhà cung cấp nào</div>
-                    </div>
-                  ),
-                }}
-              />
+                    ),
+                  }}
+                />
+              </Spin>
             </Card>
           </Content>
 
@@ -364,7 +383,14 @@ export default function Provider() {
             }}
             width={800}
             footer={[
-              <Button key="cancel" onClick={() => setIsModalOpen(false)}>
+              <Button
+                key="cancel"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedProvider(null);
+                  form.resetFields();
+                }}
+              >
                 Hủy
               </Button>,
               <Popconfirm
@@ -381,7 +407,12 @@ export default function Provider() {
                   Xóa
                 </Button>
               </Popconfirm>,
-              <Button key="save" type="primary" onClick={handleSaveProvider}>
+              <Button
+                key="save"
+                type="primary"
+                onClick={handleSaveProvider}
+                loading={loading}
+              >
                 {selectedProvider ? "Cập nhật" : "Tạo mới"}
               </Button>,
             ]}
@@ -392,7 +423,16 @@ export default function Provider() {
                   <Form.Item
                     label="Tên nhà cung cấp"
                     name="name"
-                    rules={[{ required: true, message: "Vui lòng nhập tên nhà cung cấp!" }]}
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập tên nhà cung cấp!",
+                      },
+                      {
+                        max: 255,
+                        message: "Tên không được vượt quá 255 ký tự!",
+                      },
+                    ]}
                   >
                     <Input />
                   </Form.Item>
@@ -401,7 +441,12 @@ export default function Provider() {
                   <Form.Item
                     label="Mã số thuế"
                     name="taxCode"
-                    rules={[{ max: 50, message: "Mã số thuế không được vượt quá 50 ký tự!" }]}
+                    rules={[
+                      {
+                        max: 50,
+                        message: "Mã số thuế không được vượt quá 50 ký tự!",
+                      },
+                    ]}
                   >
                     <Input />
                   </Form.Item>
@@ -410,7 +455,16 @@ export default function Provider() {
                   <Form.Item
                     label="Số điện thoại"
                     name="phone"
-                    rules={[{ max: 20, message: "Số điện thoại không được vượt quá 20 ký tự!" }]}
+                    rules={[
+                      {
+                        max: 20,
+                        message: "Số điện thoại không được vượt quá 20 ký tự!",
+                      },
+                      {
+                        pattern: /^[0-9]*$/,
+                        message: "Số điện thoại chỉ được chứa số!",
+                      },
+                    ]}
                   >
                     <Input />
                   </Form.Item>
@@ -420,8 +474,14 @@ export default function Provider() {
                     label="Email"
                     name="email"
                     rules={[
-                      { type: "email", message: "Email không đúng định dạng!" },
-                      { max: 100, message: "Email không được vượt quá 100 ký tự!" },
+                      {
+                        type: "email",
+                        message: "Email không đúng định dạng!",
+                      },
+                      {
+                        max: 100,
+                        message: "Email không được vượt quá 100 ký tự!",
+                      },
                     ]}
                   >
                     <Input />
@@ -438,7 +498,10 @@ export default function Provider() {
                     name="status"
                     valuePropName="checked"
                   >
-                    <Switch checkedChildren="Hoạt động" unCheckedChildren="Ngừng hoạt động" />
+                    <Switch
+                      checkedChildren="Hoạt động"
+                      unCheckedChildren="Ngừng hoạt động"
+                    />
                   </Form.Item>
                 </Col>
               </Row>
