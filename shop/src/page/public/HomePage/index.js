@@ -76,7 +76,6 @@ const HomePage = () => {
     const fetchCategories = async () => {
       try {
         const res = await categoryApi.getHomePage();
-        console.log("API response:", res);
         setCategoriesSidebar(res.data.data);
       } catch (error) {
         console.error("Lỗi lấy danh mục:", error);
