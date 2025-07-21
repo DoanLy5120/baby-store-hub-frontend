@@ -862,25 +862,6 @@ export default function Bill() {
                           },
                         ]}
                       />
-
-                      <Button
-                        block
-                        type="dashed"
-                        icon={<PlusOutlined />}
-                        style={{ marginTop: 12 }}
-                        onClick={() =>
-                          add({
-                            productName: "",
-                            quantity: 1,
-                            unitPrice: 0,
-                            total: 0,
-                            vat: 0,
-                            key: Date.now(),
-                          })
-                        }
-                      >
-                        Thêm sản phẩm
-                      </Button>
                     </>
                   )}
                 </Form.List>
