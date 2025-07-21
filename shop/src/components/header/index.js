@@ -320,7 +320,7 @@ function Header() {
           </div>
         </div>
       </div>
-      <div className="header-menu-wrapper">
+      <div className="header-menu-wrapper container">
         <Menu
           onClick={onClick}
           selectedKeys={[current]}

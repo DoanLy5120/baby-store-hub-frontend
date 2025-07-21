@@ -38,7 +38,7 @@ const { Header, Content } = Layout;
 
 const mapCategoryData = (data, providers) =>
   data.map((item) => {
-    const provider = providers.find((p) => p.id === item.nhaCungCap); 
+    const provider = providers.find((p) => p.id === item.nhaCungCap);
     return {
       id: item.id,
       categoryCode: item.maDanhMuc,
@@ -74,7 +74,7 @@ export default function Category() {
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
     form.setFieldsValue({ ...category });
-    setPreviewImage(category.image); 
+    setPreviewImage(category.image);
     setIsModalOpen(true);
   };
 
@@ -198,7 +198,7 @@ export default function Category() {
         const categoryRes = await categoryApi.getAll();
         if (categoryRes.data.success) {
           const fetched = categoryRes.data.data.map((item) => {
-            const provider = providerList.find((p) => p.id === item.nhaCungCap); 
+            const provider = providerList.find((p) => p.id === item.nhaCungCap);
             return {
               id: item.id,
               categoryCode: item.maDanhMuc,
@@ -240,14 +240,18 @@ export default function Category() {
       icon: <MdHomeWork />,
       children: providers.map((prov) => ({
         key: String(prov.id),
-        label: prov.name,
-        icon: <MdHomeWork />,
+        label: prov.tenNhaCungCap,
       })),
     },
   ];
 
   //handle provide filter
   const handleProviderFilter = (id) => {
+    if (id === "all") {
+      setFilteredCategories(categories);
+      return;
+    }
+
     const provider = providers.find((p) => String(p.id) === String(id));
     if (!provider) {
       setFilteredCategories(categories);
@@ -255,7 +259,11 @@ export default function Category() {
       return;
     }
 
-    const filtered = categories.filter((cat) => cat.provide === provider.name);
+    const filtered = categories.filter(
+      (cat) =>
+        cat.provide?.toLowerCase() === provider.tenNhaCungCap.toLowerCase()
+    );
+
     setFilteredCategories(filtered);
   };
 
@@ -450,11 +458,11 @@ export default function Category() {
                       listType="picture"
                       showUploadList={false}
                       beforeUpload={(file) => {
-                        form.setFieldValue("image", file); 
+                        form.setFieldValue("image", file);
                         const reader = new FileReader();
                         reader.readAsDataURL(file);
                         reader.onload = () => {
-                          setPreviewImage(reader.result); 
+                          setPreviewImage(reader.result);
                         };
                         return false;
                       }}
