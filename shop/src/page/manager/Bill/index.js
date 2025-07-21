@@ -633,7 +633,7 @@ export default function Bill() {
               <Table
                 className="bill__content-table"
                 columns={columns}
-                dataSource={filteredInvoices}
+                dataSource={searchedInvoices}
                 rowKey="id"
                 pagination={{
                   current: currentPage,
