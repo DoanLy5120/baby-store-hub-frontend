@@ -63,8 +63,7 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #f0f0f0;
-  position: sticky;
-  top: 80px; 
+  top: 105px;
 
   .search-input {
     min-width: 900px;
@@ -184,7 +183,7 @@
     padding: 40px;
     width: 100%;
     background: white;
-    font-family: 'Times New Roman', Times, serif;
+    font-family: "Times New Roman", Times, serif;
     font-size: 20pt;
     color: #000;
     line-height: 1.5;
@@ -236,4 +235,3 @@
     font-size: 20pt;
   }
 }
-

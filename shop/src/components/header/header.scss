@@ -193,7 +193,6 @@
   .header-menu-wrapper {
     width: 100%;
     background-color: var(--main);
-    overflow-x: auto;
 
     .custom-menu {
       display: flex;
@@ -205,7 +204,7 @@
     }
 
     .ant-menu-overflow-item-rest {
-      display: none !important; // Ẩn dấu ...
+      display: none !important; 
     }
 
     .ant-menu-item,
