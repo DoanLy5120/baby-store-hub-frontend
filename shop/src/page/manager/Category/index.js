@@ -47,7 +47,7 @@ const mapCategoryData = (data, providers) =>
       productCount: item.soLuongSanPham,
       provide: provider?.tenNhaCungCap || "Không rõ",
       image: item.hinhAnh
-        ? `https://web-production-c18cf.up.railway.app/storage/${item.hinhAnh}`
+        ? `http://127.0.0.1:8000/storage/${item.hinhAnh}`
         : null,
     };
   });
@@ -207,7 +207,7 @@ export default function Category() {
               productCount: item.soLuongSanPham,
               provide: provider?.tenNhaCungCap || "Không rõ",
               image: item.hinhAnh
-                ? `https://web-production-c18cf.up.railway.app/storage/${item.hinhAnh}`
+                ? `http://127.0.0.1:8000/storage/${item.hinhAnh}`
                 : null,
             };
           });

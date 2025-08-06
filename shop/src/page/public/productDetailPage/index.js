@@ -95,7 +95,7 @@ const ProductDetailPage = () => {
         {/* Ảnh sản phẩm */}
         <Col xs={24} md={10}>
           <Image
-            src={`https://web-production-c18cf.up.railway.app/storage/${product.hinhAnh}`}
+            src={`http://127.0.0.1:8000/storage/${product.hinhAnh}`}
             alt={product.tenSanPham}
             width="400px"
             height="400px"
@@ -184,7 +184,7 @@ const ProductDetailPage = () => {
                   style={{ padding: "0 8px" }}
                 >
                   <img
-                    src={`https://web-production-c18cf.up.railway.app/storage/${item.hinhAnh}`}
+                    src={`http://127.0.0.1:8000/storage/${item.hinhAnh}`}
                     alt={item.tenSanPham}
                     style={{
                       width: "100%",

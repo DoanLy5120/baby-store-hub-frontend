@@ -228,7 +228,7 @@ function Header() {
                         onClick={() => navigate(`/san-pham/${item.id}`)}
                       >
                         <img
-                          src={`${"https://web-production-c18cf.up.railway.app"}/storage/${
+                          src={`${"http://127.0.0.1:8000"}/storage/${
                             item.hinhAnh
                           }`}
                           alt={item.tenSanPham}
