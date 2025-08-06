@@ -50,7 +50,7 @@ const mapProductsFromAPI = (data, categories = []) =>
     price: item.giaBan || 0,
     stock: item.soLuongTon || 0,
     image: item.hinhAnh
-      ? `${"https://web-production-c18cf.up.railway.app"}/storage/${
+      ? `${"http://127.0.0.1:8000"}/storage/${
           item.hinhAnh
         }`
       : null,

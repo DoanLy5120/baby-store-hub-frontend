@@ -267,7 +267,7 @@ function Selling() {
         id: selected.id,
         code: selected.maSKU,
         name: selected.tenSanPham,
-        image: `${"https://web-production-c18cf.up.railway.app"}/storage/${
+        image: `${"http://127.0.0.1:8000"}/storage/${
           selected.hinhAnh
         }`,
         quantity: 1,
@@ -369,7 +369,7 @@ function Selling() {
                         }}
                       >
                         <img
-                          src={`${"https://web-production-c18cf.up.railway.app"}/storage/${
+                          src={`${"http://127.0.0.1:8000"}/storage/${
                             item.hinhAnh
                           }`}
                           alt={item.tenSanPham}
