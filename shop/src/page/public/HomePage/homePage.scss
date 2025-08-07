@@ -323,13 +323,15 @@
 
             .product-meta {
               margin-top: 6px;
+              display: flex;
 
               .sold-status {
                 background: #ffe1e1;
                 color: #ff4d4f;
-                width: 80%;
+                width: 100%;
                 font-size: 13px;
                 padding: 2px 8px;
+                margin-right: 10px;
                 border-radius: 999px;
                 display: inline-block;
               }
@@ -404,7 +406,7 @@
 
         .hot-products-carousel {
           padding: 20px;
-          background: linear-gradient(to bottom right ,#f0eec0,#d3f8a3, rgb(152, 202, 253));
+          background: linear-gradient(to bottom right , rgb(152, 202, 253),#d3f8a3,#f0eec0);
           border-radius: 8px;
           margin: 40px 0;
 
