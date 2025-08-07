@@ -140,22 +140,10 @@ const navbarManager = [
   },
 ];
 
-const userItems = [
-  {
-    key: "1",
-    label: <Link to="/manager/tai-khoan">TÀI KHOẢN</Link>,
-    icon: <MdAccountBox />,
-  },
-  {
-    key: "2",
-    label: <Link to="/login">ĐĂNG XUẤT</Link>,
-    icon: <IoLogOut />,
-  },
-];
-
 function HeaderManager() {
   const navigate = useNavigate();
-  const [isLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   //chuyển tab
   const location = useLocation();
   const currentPath = location.pathname.replace(/^\/|\/$/g, "");
@@ -164,6 +152,29 @@ function HeaderManager() {
     setCurrent(e.keyPath);
     navigate(`/${e.key}/`);
   };
+
+  // Xử lý đăng xuất
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("cart");
+    setIsLoggedIn(false);
+    setCartCount(0);
+    window.dispatchEvent(new Event("cart-updated"));
+    navigate("/");
+  };
+
+  const userItems = [
+    {
+      key: "1",
+      label: <Link to="/manager/tai-khoan">TÀI KHOẢN</Link>,
+      icon: <MdAccountBox />,
+    },
+    {
+      key: "2",
+      label: <span onClick={handleLogout}>ĐĂNG XUẤT</span>,
+      icon: <IoLogOut />,
+    },
+  ];
 
   return (
     <header className="container">

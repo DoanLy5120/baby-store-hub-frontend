@@ -71,6 +71,47 @@ const HomePage = () => {
       return;
     }
 
+    // Lấy giỏ hàng hiện tại từ localStorage
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    // Kiểm tra sản phẩm đã tồn tại chưa
+    const existingIndex = cart.findIndex(
+      (item) => item.id === selectedProduct.id
+    );
+
+    if (existingIndex !== -1) {
+      // Nếu đã tồn tại, tăng số lượng
+      cart[existingIndex].quantity += quantity;
+    } else {
+      // Nếu chưa, thêm mới
+      let priceWithVAT = selectedProduct.giaBan;
+      if (typeof selectedProduct.VAT !== "undefined") {
+        priceWithVAT = selectedProduct.giaBan * (1 + selectedProduct.VAT / 100);
+      }
+      // Nếu là sản phẩm sale có giá sau giảm thì lấy giá đó
+      if (typeof selectedProduct.giaSauGiam !== "undefined") {
+        priceWithVAT = selectedProduct.giaSauGiam;
+      }
+      cart.push({
+        id: selectedProduct.id,
+        name: selectedProduct.tenSanPham,
+        desc: selectedProduct.moTa,
+        price: selectedProduct.giaBan,
+        priceWithVAT: priceWithVAT,
+        image: selectedProduct.hinhAnh,
+        quantity: quantity,
+        stock: selectedProduct.soLuongTon,
+        isHot: selectedProduct.is_noi_bat,
+        VAT: selectedProduct.VAT,
+        discountPercent: selectedProduct.discountPercent || 0,
+      });
+    }
+
+    // Cập nhật lại localStorage
+    localStorage.setItem("cart", JSON.stringify(cart));
+    // Trigger custom event để header cập nhật cartCount ngay lập tức
+    window.dispatchEvent(new Event("cart-updated"));
+
     api.success({
       message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
       placement: "topRight",
@@ -487,6 +528,17 @@ const HomePage = () => {
                             </span>{" "}
                             {product.soldCount}
                           </span>
+                          <div className="product-actions">
+                            <Button
+                              icon={<FaShoppingCart />}
+                              type="primary"
+                              shape="circle"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCartClick(product);
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     );
