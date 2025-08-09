@@ -1,6 +1,7 @@
 import { DefaultLayout, EmptyLayout, ManagerLayout } from "../layouts";
 import HomePage from "../page/public/HomePage/index";
 import ProductDetailPage from "../page/public/productDetailPage/index";
+import CategoryDetailPage from "../page/public/categoryDetailPage";
 import Info from "../page/customer/InfoPage";
 import CartPage from "../page/customer/CartPage";
 import Login from "../page/public/loginPage";
@@ -26,6 +27,11 @@ const publicRoutes = [
   {
     path: "/san-pham/:id",
     component: ProductDetailPage,
+    layout: DefaultLayout,
+  },
+  {
+    path: "/danh-muc/:id",
+    component: CategoryDetailPage,
     layout: DefaultLayout,
   },
 ];
