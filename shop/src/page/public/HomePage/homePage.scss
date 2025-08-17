@@ -233,7 +233,12 @@
 
         .flash-sale-section {
           padding: 20px;
-          background: linear-gradient(0, rgb(152, 202, 253),#f0c0dc);
+          background: linear-gradient(
+            to bottom right,
+            #f0eec0,
+            #d3f8a3,
+            rgb(152, 202, 253)
+          );
           border-radius: 8px;
           margin: 40px 0;
 
@@ -406,7 +411,12 @@
 
         .hot-products-carousel {
           padding: 20px;
-          background: linear-gradient(to bottom right , rgb(152, 202, 253),#d3f8a3,#f0eec0);
+          background: #fff;
+          // linear-gradient(
+          //   to bottom right,
+          //   rgb(152, 202, 253),
+          //   #f0c0dc
+          // );
           border-radius: 8px;
           margin: 40px 0;
 

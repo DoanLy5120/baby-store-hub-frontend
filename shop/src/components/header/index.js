@@ -24,7 +24,7 @@ const navbarItems = [
     icon: <AiFillHome />,
   },
   {
-    label: "SẢN PHẨM",
+    label: "ĐƠN MUA",
     key: "product",
     icon: <FaBoxOpen />,
     children: [

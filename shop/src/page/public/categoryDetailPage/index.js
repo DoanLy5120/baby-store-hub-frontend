@@ -216,7 +216,7 @@ function CategoryDetailPage() {
 
   return (
     <div className="category-page">
-      {contextHolder}
+    {contextHolder}
       <Layout>
         {/* Sidebar */}
         <div className="sidebar">
