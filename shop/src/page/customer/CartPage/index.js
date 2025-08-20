@@ -186,7 +186,7 @@ const CartPage = () => {
 
         <Col xs={24} lg={8}>
           <Card className="summary-card">
-            <div className="discount-section">
+            {/* <div className="discount-section">
               <h3 className="section-title">Mã giảm giá</h3>
               <Space.Compact style={{ width: "100%" }}>
                 <Input
@@ -202,19 +202,19 @@ const CartPage = () => {
               <Button block className="select-code-btn">
                 CHỌN MÃ
               </Button>
-            </div>
+            </div> */}
 
-            <Divider />
+            {/* <Divider /> */}
 
-            <div className="kicoin-section">
+            {/* <div className="kicoin-section">
               <h3 className="section-title">Sử dụng điểm tích</h3>
               <div className="kicoin-toggle">
                 <span>Dùng 100 điểm</span>
                 <Switch checked={useKiCoin} onChange={setUseKiCoin} />
               </div>
-            </div>
+            </div> */}
 
-            <Divider />
+            {/* <Divider /> */}
 
             <div className="order-summary">
               <h3 className="section-title">Thông tin đơn hàng</h3>
@@ -244,7 +244,7 @@ const CartPage = () => {
               className="continue-btn"
               onClick={handleGoToCheckout}
             >
-              THANH TOÁN
+              ĐẶT HÀNG
             </Button>
           </Card>
         </Col>
