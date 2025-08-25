@@ -10,8 +10,8 @@ import {
   Tag,
   notification,
   InputNumber,
+  Modal,
 } from "antd";
-import { Modal, message } from "antd";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MultiCarousel from "react-multi-carousel";
@@ -21,12 +21,23 @@ import banner1 from "../../../assets/img/homePage/banner1.jpg";
 import banner2 from "../../../assets/img/homePage/banner2.jpg";
 import banner3 from "../../../assets/img/homePage/banner3.jpg";
 import banner4 from "../../../assets/img/homePage/banner4.jpg";
+import Abbott from "../../../assets/img/homePage/Abbott.png";
+import Aptamil from "../../../assets/img/homePage/Aptamil.jpg";
+import HiPP from "../../../assets/img/homePage/HiPP.png";
+import Huggies from "../../../assets/img/homePage/Huggies.png";
+import Megumi from "../../../assets/img/homePage/MEGUMI.png";
+import Merries from "../../../assets/img/homePage/Merries.png";
+import Nestlé from "../../../assets/img/homePage/Nestlé.png";
+import Pigeon from "../../../assets/img/homePage/Pigeon.png";
+import HealthyCare from "../../../assets/img/homePage/healthcare.jpg";
+import Hoppi from "../../../assets/img/homePage/hoppi.png";
 import { FaList, FaSyncAlt, FaShoppingCart } from "react-icons/fa";
 import { FaIdeal, FaGift, FaTruckFast } from "react-icons/fa6";
 import { BiSolidDiscount } from "react-icons/bi";
 import { MdOutlineScreenSearchDesktop } from "react-icons/md";
 import "./homePage.scss";
 import { formatVND } from "../../../utils/formatter";
+import { formatTime } from "../../../utils/formaterTime";
 import categoryApi from "../../../api/categoryApi";
 import productApi from "../../../api/productApi";
 
@@ -39,7 +50,9 @@ const HomePage = () => {
   const [api, contextHolder] = notification.useNotification();
   const [categoriesSidebar, setCategoriesSidebar] = useState([]);
   const [hotProducts, setHotProducts] = useState([]);
+  const [saleProducts, setSaleProducts] = useState([]);
   const [quantity, setQuantity] = useState(1);
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
 
   const navigate = useNavigate();
 
@@ -51,9 +64,53 @@ const HomePage = () => {
 
   const handleAddToCart = () => {
     if (quantity > selectedProduct.soLuongTon) {
-      message.warning("Vượt quá số lượng tồn kho");
+      api.warning({
+        message: `Vượt quá giới hạn tồn kho`,
+        placement: "topRight",
+      });
       return;
     }
+
+    // Lấy giỏ hàng hiện tại từ localStorage
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    // Kiểm tra sản phẩm đã tồn tại chưa
+    const existingIndex = cart.findIndex(
+      (item) => item.id === selectedProduct.id
+    );
+
+    if (existingIndex !== -1) {
+      // Nếu đã tồn tại, tăng số lượng
+      cart[existingIndex].quantity += quantity;
+    } else {
+      // Nếu chưa, thêm mới
+      let priceWithVAT = selectedProduct.giaBan;
+      if (typeof selectedProduct.VAT !== "undefined") {
+        priceWithVAT = selectedProduct.giaBan * (1 + selectedProduct.VAT / 100);
+      }
+      // Nếu là sản phẩm sale có giá sau giảm thì lấy giá đó
+      if (typeof selectedProduct.giaSauGiam !== "undefined") {
+        priceWithVAT = selectedProduct.giaSauGiam;
+      }
+      cart.push({
+        id: selectedProduct.id,
+        name: selectedProduct.tenSanPham,
+        desc: selectedProduct.moTa,
+        price: selectedProduct.giaBan,
+        priceWithVAT: priceWithVAT,
+        image: selectedProduct.hinhAnh,
+        quantity: quantity,
+        stock: selectedProduct.soLuongTon,
+        isHot: selectedProduct.is_noi_bat,
+        VAT: selectedProduct.VAT,
+        discountPercent: selectedProduct.discountPercent || 0,
+      });
+    }
+
+    // Cập nhật lại localStorage
+    localStorage.setItem("cart", JSON.stringify(cart));
+    // Trigger custom event để header cập nhật cartCount ngay lập tức
+    window.dispatchEvent(new Event("cart-updated"));
 
     api.success({
       message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
@@ -64,7 +121,6 @@ const HomePage = () => {
   };
 
   const handleBuyNow = () => {
-    message.success("Chuyển đến trang thanh toán...");
     setIsModalVisible(false);
   };
 
@@ -92,7 +148,7 @@ const HomePage = () => {
         const allProducts = response.data.data;
 
         const filtered = allProducts.filter(
-          (product) => product.is_noi_bat == 1
+          (product) => product.is_noi_bat === 1
         );
         setHotProducts(filtered);
       } catch (error) {
@@ -100,25 +156,64 @@ const HomePage = () => {
       }
     };
 
+    const fetchFlashSaleProducts = async () => {
+      try {
+        const response = await productApi.getHotProducts();
+        const allProducts = response.data.data;
+
+        const filtered = allProducts
+          .filter((product) => product.is_noi_bat === 0)
+          .map((item, index) => {
+            const discountPercent = Math.floor(Math.random() * 30) + 20; // từ 20 đến 49%
+            const giaGoc = item.giaBan * (1 + item.VAT / 100); // tính giá gốc có VAT
+            const giaSauGiam = giaGoc - (giaGoc * discountPercent) / 100;
+
+            return {
+              ...item,
+              discountPercent,
+              giaSauGiam: Math.round(giaSauGiam), // bạn có thể format ngay tại đây nếu muốn
+              soldCount:
+                index % 3 === 0
+                  ? "Vừa mở bán"
+                  : index % 3 === 1
+                  ? "Đã bán 2"
+                  : "Đã bán 5",
+            };
+          });
+
+        setSaleProducts(filtered);
+      } catch (error) {
+        console.error("Lỗi khi lấy sản phẩm flash sale:", error);
+      }
+    };
+
     fetchHotProducts();
+    fetchFlashSaleProducts();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
 
   const responsive = {
-    superLargeDesktop: {
-      breakpoint: { max: 4000, min: 3000 },
-      items: 5,
-    },
     desktop: {
       breakpoint: { max: 3000, min: 1024 },
       items: 4,
+      slidesToSlide: 4,
     },
     tablet: {
       breakpoint: { max: 1024, min: 464 },
       items: 2,
+      slidesToSlide: 2,
     },
     mobile: {
       breakpoint: { max: 464, min: 0 },
       items: 1,
+      slidesToSlide: 1,
     },
   };
 
@@ -130,7 +225,7 @@ const HomePage = () => {
         style={{ display: "flex", alignItems: "center", gap: "10px" }}
       >
         <img
-          src={`https://web-production-c18cf.up.railway.app/storage/${category.hinhAnh}`}
+          src={`http://127.0.0.1:8000/storage/${category.hinhAnh}`}
           alt={category.tenDanhMuc}
           style={{ width: 30, height: 30, objectFit: "cover" }}
         />
@@ -198,6 +293,60 @@ const HomePage = () => {
       color: "#eb2f96",
     },
   ];
+
+  //thương hiệu
+  const brandData = [
+    {
+      name: "Abbott",
+      logo: Abbott,
+    },
+    {
+      name: "Healthy Care",
+      logo: HealthyCare,
+    },
+    {
+      name: "Hoppi",
+      logo: Hoppi,
+    },
+    {
+      name: "Merries",
+      logo: Merries,
+    },
+    {
+      name: "Nestlé",
+      logo: Nestlé,
+    },
+    {
+      name: "Huggies",
+      logo: Huggies,
+    },
+    {
+      name: "Aptamil",
+      logo: Aptamil,
+    },
+    { name: "MEGUMI", logo: Megumi },
+    {
+      name: "Pigeon",
+      logo: Pigeon,
+    },
+    {
+      name: "HiPP",
+      logo: HiPP,
+    },
+  ];
+
+  // Helper: chia brandData thành từng nhóm 6 thương hiệu
+  const chunkArray = (arr, size) =>
+    arr.reduce(
+      (acc, _, i) => (i % size === 0 ? [...acc, arr.slice(i, i + size)] : acc),
+      []
+    );
+
+  const onChange = (currentSlide) => {
+    console.log("Current Slide:", currentSlide);
+  };
+
+  const brandChunks = chunkArray(brandData, 6); // mỗi slide 6 logo
 
   return (
     <div className="homepage">
@@ -312,50 +461,107 @@ const HomePage = () => {
               </Row>
             </div>
 
-            {/* Product Categories Section */}
-            <div className="product-categories">
-              <div className="section-title">
-                <h2>Tiện ích hằng ngày</h2>
-              </div>
-              <MultiCarousel
-                responsive={responsive}
-                arrows={true}
-                infinite={false}
-                keyBoardControl
-                autoPlaySpeed={3000}
-              >
-                {categoriesSidebar.map((category) => (
-                  <div key={category.id} style={{ padding: "0 10px" }}>
-                    <Card
-                      hoverable
-                      cover={
-                        <img
-                          alt={category.tenDanhMuc}
-                          src={`https://web-production-c18cf.up.railway.app/storage/${category.hinhAnh}`}
-                          style={{
-                            height: 180,
-                            width: 300,
-                            objectFit: "contain",
-                            padding: 12,
-                          }}
-                        />
-                      }
-                    >
-                      <h3>{category.tenDanhMuc}</h3>
-                      <p>
-                        {category.moTa ||
-                          "Khám phá các sản phẩm trong danh mục này."}
-                      </p>
-                      <Button
-                        type="primary"
-                        onClick={() => navigate(`/danh-muc/${category.id}`)}
+            {saleProducts.length > 0 && (
+              <div className="flash-sale-section">
+                <Row
+                  justify="space-between"
+                  align="middle"
+                  className="section-title"
+                >
+                  <Col>
+                    <h2>
+                      Flash Sale{" "}
+                      <span className="countdown-timer">
+                        {formatTime(timeLeft)}
+                      </span>
+                    </h2>
+                  </Col>
+                  <Col>
+                    <div className="detail">
+                      <Link to="#">Xem tất cả &gt;&gt;&gt;</Link>
+                    </div>
+                  </Col>
+                </Row>
+
+                <MultiCarousel
+                  responsive={responsive}
+                  arrows={true}
+                  infinite={false}
+                  keyBoardControl
+                  autoPlay={false}
+                  autoPlaySpeed={3000}
+                >
+                  {saleProducts.map((product, index) => {
+                    return (
+                      <div
+                        key={product.id}
+                        className="flash-sale-card"
+                        onClick={() => handleProductClick(product.id)}
                       >
-                        Xem ngay
-                      </Button>
-                    </Card>
+                        <div className="product-img-wrapper">
+                          <img
+                            src={`http://127.0.0.1:8000/storage/${product.hinhAnh}`}
+                            alt={product.tenSanPham}
+                          />
+                          <div className="discount-tag">
+                            -{product.discountPercent}%
+                          </div>
+                        </div>
+                        <div className="product-price">
+                          <strong>{formatVND(product.giaSauGiam)}</strong>
+                          <div
+                            style={{
+                              textDecoration: "line-through",
+                              color: "#333",
+                              fontSize: "13px",
+                            }}
+                          >
+                            {formatVND(
+                              product.giaBan * (1 + product.VAT / 100)
+                            )}
+                          </div>
+                        </div>
+                        <div className="product-meta">
+                          <span className="sold-status">
+                            <span role="img" aria-label="hot">
+                              🔥
+                            </span>{" "}
+                            {product.soldCount}
+                          </span>
+                          <div className="product-actions">
+                            <Button
+                              icon={<FaShoppingCart />}
+                              type="primary"
+                              shape="circle"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCartClick(product);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </MultiCarousel>
+              </div>
+            )}
+
+            <div className="featured-brands">
+              <h2>Thương hiệu</h2>
+              <Carousel afterChange={onChange} dots={true} autoplay>
+                {brandChunks.map((group, idx) => (
+                  <div key={idx} className="brand-slide">
+                    <div className="brand-grid">
+                      {group.map((brand, i) => (
+                        <div key={i} className="brand-item">
+                          <img src={brand.logo} alt={brand.name} />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
-              </MultiCarousel>
+              </Carousel>
             </div>
 
             {hotProducts.length > 0 && (
@@ -370,7 +576,7 @@ const HomePage = () => {
                   </Col>
                   <Col>
                     <div className="detail">
-                      <Link to="#">XEM TẤT CẢ &gt;&gt;&gt;</Link>
+                      <Link to="#">Xem tất cả &gt;&gt;&gt;</Link>
                     </div>
                   </Col>
                 </Row>
@@ -397,7 +603,7 @@ const HomePage = () => {
                             <div className="product-image-container">
                               <img
                                 alt={product.tenSanPham}
-                                src={`https://web-production-c18cf.up.railway.app/storage/${product.hinhAnh}`}
+                                src={`http://127.0.0.1:8000/storage/${product.hinhAnh}`}
                               />
                               {fakeGift && (
                                 <Tag className="gift-tag" color="magenta">
@@ -476,7 +682,7 @@ const HomePage = () => {
         {selectedProduct && (
           <div style={{ display: "flex", gap: 16 }}>
             <img
-              src={`https://web-production-c18cf.up.railway.app/storage/${selectedProduct.hinhAnh}`}
+              src={`http://127.0.0.1:8000/storage/${selectedProduct.hinhAnh}`}
               alt={selectedProduct.tenSanPham}
               style={{ width: 100, height: 100, objectFit: "contain" }}
             />

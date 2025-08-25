@@ -43,6 +43,7 @@ const { Option } = Select;
 const isLocal = process.env.NODE_ENV === "development";
 
 const mapProductsFromAPI = (data, categories = []) =>
+
   data.map((item) => {
     let imageUrl = null;
     if (item.hinhAnh) {
@@ -70,6 +71,7 @@ const mapProductsFromAPI = (data, categories = []) =>
       isFeatured: item.is_noi_bat || 0,
     };
   });
+
 
 export default function Product() {
   const [selectedProduct, setSelectedProduct] = useState(null);

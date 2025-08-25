@@ -1,8 +1,5 @@
 import HeaderManager from "../../components/manager/headerManager";
 import Sidebar from "../../components/manager/sidebarManager";
-import { Layout } from "antd";
-
-const { Sider, Content } = Layout;
 
 function ManagerLayoutSidebar({
   children,
@@ -12,60 +9,52 @@ function ManagerLayoutSidebar({
   disableMarginTop = false,
 }) {
   return (
-    <div style={{ minHeight: "100vh" }}>
-      {/* Header cố định */}
+    <div style={{ minHeight: "100vh", backgroundColor: "#f5f7fa" }}>
+      {/* Header */}
       <div
+        className="container"
         style={{
           position: "fixed",
           top: 0,
-          left: 0,
-          right: 0,
-          height: 80,
           zIndex: 1000,
-          backgroundColor: "#fff",
+          paddingTop: 16,
+          paddingBottom: 16,
+          background: "#fff",
+          borderBottom: "1px solid #eee",
         }}
       >
         <HeaderManager />
       </div>
 
-      {/* Sidebar cố định */}
+      {/* Body: Sidebar + Content */}
       <div
+        className="container"
         style={{
-          position: "fixed",
-          top: 80,
-          left: 0,
-          width: 200,
-          height: "calc(100vh - 80px)",
-          overflowY: "auto",
-          backgroundColor: "#fff",
-          borderRight: "1px solid #eee",
-          zIndex: 999,
+          display: "flex",
+          marginTop: disableMarginTop ? 20 : 100,
+          gap: 24,
         }}
       >
-        {title && (
-          <div
-            style={{
-              fontSize: "18px",
-              fontWeight: "bold",
-              padding: "2px 29px 18px",
-              borderBottom: "1px solid #eee",
-            }}
-          >
-            {title}
-          </div>
-        )}
-        <Sidebar items={sidebarItems} onItemClick={onSidebarClick} />
-      </div>
+        {/* Sidebar */}
+        <div
+          style={{
+            width: 200,
+            background: "#fff",
+            border: "1px solid #eee",
+            borderRadius: 6,
+            padding: 16,
+          }}
+        >
+          {title && (
+            <div style={{ fontSize: 16, fontWeight: "bold", marginBottom: 16 }}>
+              {title}
+            </div>
+          )}
+          <Sidebar items={sidebarItems} onItemClick={onSidebarClick} />
+        </div>
 
-      {/* Nội dung chính */}
-      <div
-        style={{
-          marginTop: disableMarginTop ? 0 : 80,
-          marginLeft: 200,
-          backgroundColor: "#f5f7fa",
-        }}
-      >
-        {children}
+        {/* Main Content */}
+        <div style={{ flex: 1 }}>{children}</div>
       </div>
     </div>
   );

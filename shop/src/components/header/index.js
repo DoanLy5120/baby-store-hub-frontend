@@ -24,7 +24,7 @@ const navbarItems = [
     icon: <AiFillHome />,
   },
   {
-    label: "SẢN PHẨM",
+    label: "ĐƠN MUA",
     key: "product",
     icon: <FaBoxOpen />,
     children: [
@@ -50,21 +50,6 @@ const navbarItems = [
   },
 ];
 
-//dropdown User
-const userItems = [
-  {
-    key: "1",
-    label: <Link to="/info">Thông tin cá nhân</Link>,
-  },
-  {
-    key: "2",
-    label: <Link to="/login">Đăng xuất</Link>,
-  },
-];
-
-//search
-const { Search } = Input;
-
 function Header() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -77,6 +62,31 @@ function Header() {
   const [openModal, setOpenModal] = useState(false);
 
   const searchRef = useRef(null);
+
+  // Xử lý đăng xuất
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("cart");
+    setIsLoggedIn(false);
+    setCartCount(0);
+    window.dispatchEvent(new Event("cart-updated"));
+    navigate("/");
+  };
+
+  // Dropdown userItems với đăng xuất
+  const userItems = [
+    {
+      key: "1",
+      label: <Link to="/info">Thông tin cá nhân</Link>,
+    },
+    {
+      key: "2",
+      label: <span onClick={handleLogout}>Đăng xuất</span>,
+    },
+  ];
+
+//search
+const { Search } = Input;
 
   const onSearch = async (value) => {
     if (!value) return;
@@ -166,6 +176,26 @@ function Header() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === "cart") {
+        const cartItems = getCartItems();
+        setCartCount(cartItems.length);
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  useEffect(() => {
+    const handleCartUpdated = () => {
+      const cartItems = getCartItems();
+      setCartCount(cartItems.length);
+    };
+    window.addEventListener("cart-updated", handleCartUpdated);
+    return () => window.removeEventListener("cart-updated", handleCartUpdated);
+  }, []);
+
   return (
     <div className="header-wrapper">
       <div className="container">
@@ -228,7 +258,7 @@ function Header() {
                         onClick={() => navigate(`/san-pham/${item.id}`)}
                       >
                         <img
-                          src={`${"https://web-production-c18cf.up.railway.app"}/storage/${
+                          src={`${"http://127.0.0.1:8000"}/storage/${
                             item.hinhAnh
                           }`}
                           alt={item.tenSanPham}
@@ -320,7 +350,7 @@ function Header() {
           </div>
         </div>
       </div>
-      <div className="header-menu-wrapper">
+      <div className="header-menu-wrapper container">
         <Menu
           onClick={onClick}
           selectedKeys={[current]}

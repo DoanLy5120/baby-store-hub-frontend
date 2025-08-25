@@ -170,7 +170,7 @@ export default function Category() {
           message: response.data.message,
           placement: "topRight",
         });
-        
+
         await fetchData();
         setIsModalOpen(false);
         setSelectedCategory(null);
@@ -470,7 +470,7 @@ export default function Category() {
                     name="categoryCode"
                     rules={[
                       {
-                        required: false, 
+                        required: false,
                       },
                     ]}
                   >
