@@ -88,23 +88,16 @@ function Header() {
 //search
 const { Search } = Input;
 
-  const onSearch = async (value) => {
-    if (!value) return;
-
-    try {
-      const response = await productApi.searchHeader(value);
-
-      // Điều hướng sang trang kết quả tìm kiếm (nếu có)
-      navigate("khachHang/san-pham/{id}", {
-        state: {
-          keyword: value,
-          results: response,
-        },
-      });
-    } catch (error) {
-      console.error("Lỗi tìm kiếm sản phẩm ở header:", error);
-    }
-  };
+  const onSearch = (value) => {
+    console.log('Hàm onSearch đã được gọi với từ khóa:', value);
+    
+    const trimmedValue = value.trim();
+        if (!trimmedValue) {
+            return;
+        }
+        navigate(`/tim-kiem?q=${trimmedValue}`);
+        setSuggestions([]);
+        };
 
   const handleSearchChange = (e) => {
     setSearchInput(e.target.value);
@@ -124,7 +117,7 @@ const { Search } = Input;
         console.error("Lỗi tìm kiếm:", error);
         setSuggestions([]);
       }
-    }, 500); // Chờ 500ms sau khi dừng gõ
+    }, 300); // Chờ 500ms sau khi dừng gõ
 
     return () => clearTimeout(delayDebounce); // Xóa timeout nếu người dùng vẫn gõ
   }, [searchInput]);
@@ -247,6 +240,7 @@ const { Search } = Input;
                   placeholder="Tìm sản phẩm..."
                   value={searchInput}
                   onChange={handleSearchChange}
+                  onSearch={onSearch}
                   enterButton
                 />
                 {suggestions.length > 0 && (
