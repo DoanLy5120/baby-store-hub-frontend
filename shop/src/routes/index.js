@@ -14,7 +14,7 @@ import Product from "../page/manager/Product/index";
 import Provider from "../page/manager/Provider/index";
 import InventoryCheckSheet from "../page/manager/InventoryCheckSheet/index";
 import GoodsReceipt from "../page/manager/GoodsReceipt/index";
-import SearchResultsPage from "../page/SearchResultsPage/SearchResultsPage";
+import SearchResultsPage from "../page/public/SearchResultsPage/SearchResultsPage";
 
 const publicRoutes = [
   { path: "/", component: HomePage, layout: DefaultLayout },

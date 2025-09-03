@@ -3,9 +3,9 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Layout, Row, Col, Card, Rate, Empty, Spin, Pagination, Breadcrumb, Button, Tag } from "antd";
 import { HomeOutlined } from "@ant-design/icons";
-import FilterSidebar from "../../components/FilterSidebar/FilterSidebar";
-import { formatVND } from "../../utils/formatter";
-import productApi from "../../api/productApi"; 
+import FilterSidebar from "../../../components/FilterSidebar/FilterSidebar";
+import { formatVND } from "../../../utils/formatter";
+import productApi from "../../../api/productApi"; 
 import { Link } from "react-router-dom"; 
 import "./searchResultsPage.scss";
 
