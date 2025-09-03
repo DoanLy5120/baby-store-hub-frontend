@@ -117,8 +117,7 @@ export default function InventoryCheckSheet() {
           setFilteredSheets(mapped);
         } else {
           throw new Error(
-            sheetResponse.data.message ||
-            "Không thể lấy danh sách phiếu kiểm kho"
+            sheetResponse.data.message
           );
         }
       } catch (error) {
@@ -158,7 +157,7 @@ export default function InventoryCheckSheet() {
         response = await inventorychecksheetApi.update(selectedSheet.id, data);
         if (response.data.success) {
           api.success({
-            message: "Cập nhật phiếu kiểm kho thành công",
+            message: response.data.message || "Cập nhật phiếu kiểm kho thành công",
             placement: "topRight",
           });
         }
@@ -166,7 +165,7 @@ export default function InventoryCheckSheet() {
         response = await inventorychecksheetApi.create(data);
         if (response.data.success) {
           api.success({
-            message: "Tạo phiếu kiểm kho thành công",
+            message: response.data.message || "Tạo phiếu kiểm kho thành công",
             placement: "topRight",
           });
 
@@ -261,19 +260,14 @@ export default function InventoryCheckSheet() {
         so_luong_ly_thuyet: Number(values.soLuongLyThuyet),   // antd InputNumber đã trả về số
         so_luong_thuc_te: Number(values.soLuongThucTe),
       };
-      if (
-        Number.isNaN(data.so_luong_ly_thuyet) ||
-        Number.isNaN(data.so_luong_thuc_te)
-      ) {
-        throw new Error("Số lượng phải là số hợp lệ.");
-      }
+      
       const response = await inventorychecksheetApi.addDetail(
         selectedSheet.id,
         data
       );
       if (response.data.success) {
         api.success({
-          message: "Thêm chi tiết phiếu kiểm kho thành công",
+          message: response.data.message || "Thêm chi tiết phiếu kiểm kho thành công",
           placement: "topRight",
         });
         detailForm.resetFields();
@@ -321,19 +315,10 @@ export default function InventoryCheckSheet() {
 
   const handleBalanceSheet = async (sheetId) => {
     try {
-      const currentSheet = sheets.find((sheet) => sheet.id === sheetId);
-      if (
-        currentSheet.trangThai === "phieu_tam" &&
-        currentSheet.chiTiet.length === 0
-      ) {
-        throw new Error(
-          "Phiếu kiểm kho phải có ít nhất một sản phẩm để cân bằng!"
-        );
-      }
       const response = await inventorychecksheetApi.canBang(sheetId);
       if (response.data.success) {
         api.success({
-          message: "Cân bằng phiếu kiểm kho thành công",
+          message: response.data.message || "Cân bằng phiếu kiểm kho thành công",
           placement: "topRight",
         });
         const getRes = await inventorychecksheetApi.getAll();

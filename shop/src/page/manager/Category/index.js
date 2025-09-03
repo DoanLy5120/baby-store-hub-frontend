@@ -1,5 +1,6 @@
 import "./Category.scss";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import ManagerLayoutSidebar from "../../../layouts/managerLayoutSidebar";
 import {
   Table,
@@ -18,6 +19,7 @@ import {
   Select,
   notification,
   Upload,
+  Spin,
 } from "antd";
 import {
   SearchOutlined,
@@ -30,229 +32,208 @@ import providerApi from "../../../api/providerApi";
 import { MdHomeWork } from "react-icons/md";
 import { FaReplyAll } from "react-icons/fa";
 import { UploadOutlined } from "@ant-design/icons";
-import "antd/dist/reset.css";
 import { BiSolidCategory } from "react-icons/bi";
 const { Option } = Select;
-
 const { Header, Content } = Layout;
+
+const isLocal = process.env.NODE_ENV === "development";
 
 const mapCategoryData = (data, providers) =>
   data.map((item) => {
     const provider = providers.find((p) => p.id === item.nhaCungCap);
+    let imageUrl = null;
+    if (item.hinhAnh) {
+      const originalPath = item.hinhAnh;
+      if (isLocal) {
+        // Sử dụng local server khi test
+        imageUrl = `http://127.0.0.1:8000/storage/${originalPath}`;
+      } else {
+        // Sử dụng Railway khi deploy
+        imageUrl = `https://web-production-c18cf.up.railway.app/storage/${originalPath}`;
+      }
+      console.log(`link gốc: ${originalPath}, đã map đến: ${imageUrl}`);
+    } else {
+      console.log(`[DEBUG] ko thấy hình ảnh với id: ${item.id}`);
+    }
     return {
       id: item.id,
-      categoryCode: item.maDanhMuc,
+      categoryCode: item.maDanhMuc || "-",
       name: item.tenDanhMuc,
-      description: item.moTa,
-      productCount: item.soLuongSanPham,
+      description: item.moTa || "-",
+      productCount: item.soLuongSanPham || 0,
+      providerId: item.nhaCungCap,
       provide: provider?.tenNhaCungCap || "Không rõ",
-      image: item.hinhAnh
-        ? `http://127.0.0.1:8000/storage/${item.hinhAnh}`
-        : null,
+      image: imageUrl,
     };
   });
 
 export default function Category() {
   const [categories, setCategories] = useState([]);
+  const [filteredCategories, setFilteredCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [form] = Form.useForm();
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [api, contextHolder] = notification.useNotification();
-  const [previewImage, setPreviewImage] = useState(null);
   const [providers, setProviders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fileList, setFileList] = useState([]);
+  const [form] = Form.useForm();
+  const [api, contextHolder] = notification.useNotification();
+  const navigate = useNavigate();
 
-  // Search categories by code or name
   const searchedCategories = filteredCategories.filter(
     (category) =>
       category.categoryCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handle category click
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    form.setFieldsValue({ ...category });
-    setPreviewImage(category.image);
-    setIsModalOpen(true);
-  };
-
-  // Handle save category
-  const handleSaveCategory = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const values = await form.validateFields();
-      const formData = new FormData();
+      const [providerRes, categoryRes] = await Promise.all([
+        providerApi.getAll(),
+        categoryApi.getAll(),
+      ]);
 
-      formData.append("tenDanhMuc", values.name);
-      formData.append("moTa", values.description || "");
-      formData.append("soLuongSanPham", values.productCount || 0);
-      formData.append("nhaCungCap", values.provide);
-
-      if (values.categoryCode) {
-        formData.append("maDanhMuc", values.categoryCode); //
+      if (!providerRes.data.success) {
+        throw new Error(providerRes.data.message || "Lỗi khi tải nhà cung cấp");
+      }
+      if (!categoryRes.data.success) {
+        throw new Error(categoryRes.data.message || "Lỗi khi tải danh mục");
       }
 
-      if (values.image && values.image instanceof Blob) {
-        formData.append("hinhAnh", values.image);
-      }
+      const providerList = providerRes.data.data;
+      setProviders(providerList);
 
-      if (selectedCategory) {
-        const response = await categoryApi.update(
-          selectedCategory.id,
-          formData
-        );
-
-        if (response?.data?.success) {
-          api.success({
-            message: "Cập nhật sản phẩm thành công",
-            placement: "topRight",
-          });
-
-          form.resetFields();
-          setPreviewImage(null);
-          setSelectedCategory(null);
-          setIsModalOpen(false);
-
-          const getRes = await categoryApi.getAll();
-          const mapped = mapCategoryData(getRes.data.data);
-          setCategories(mapped);
-          setFilteredCategories(mapped);
-        } else {
-          throw new Error(response?.data?.message || "Cập nhật thất bại");
-        }
-      } else {
-        console.log(values.image);
-        const response = await categoryApi.create(formData);
-        console.log(response.data);
-
-        if (response?.data?.success) {
-          api.success({
-            message: "Tạo mới sản phẩm thành công",
-            placement: "topRight",
-          });
-
-          const getRes = await categoryApi.getAll();
-          const mapped = mapCategoryData(getRes.data.data);
-          setCategories(mapped);
-          setFilteredCategories(mapped);
-        } else {
-          throw new Error(response?.data?.message || "Tạo thất bại");
-        }
-      }
-
-      // Làm mới
-      form.resetFields();
-      setPreviewImage(null);
-      setSelectedCategory(null);
-      setIsModalOpen(false);
-
-      const getRes = await categoryApi.getAll();
-      const mapped = mapCategoryData(getRes.data.data);
+      const mapped = mapCategoryData(categoryRes.data.data, providerList);
       setCategories(mapped);
       setFilteredCategories(mapped);
     } catch (error) {
-      console.error("Lỗi cập nhật:", error);
-      message.error(error.message || "Vui lòng kiểm tra lại thông tin!");
-    }
-  };
-
-  // Handle delete category
-  const handleDeleteCategory = async () => {
-    await categoryApi.delete(selectedCategory.id);
-    if (selectedCategory) {
-      setCategories((prev) =>
-        prev.filter((cat) => cat.id !== selectedCategory.id)
-      );
-      setIsModalOpen(false);
-      setSelectedCategory(null);
-      form.resetFields();
-      setPreviewImage(null);
-
-      setTimeout(() => {
-        api.success({
-          message: "Đã xóa danh mục thành công",
-          placement: "topRight",
-        });
-      }, 300);
-
-      form.resetFields();
-      setPreviewImage(null);
-      setSelectedCategory(null);
-      setIsModalOpen(false);
-
-      const getRes = await categoryApi.getAll();
-      const mapped = mapCategoryData(getRes.data.data);
-      setCategories(mapped);
-      setFilteredCategories(mapped);
+      if (error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+        navigate("/login");
+      } else {
+        message.error(error.response?.data?.message || "Lỗi khi tải dữ liệu!");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const providerRes = await providerApi.getAll();
-        const providerList = providerRes.data.data;
-        setProviders(providerList);
+    fetchData();
+  }, [navigate]);
 
-        const categoryRes = await categoryApi.getAll();
-        if (categoryRes.data.success) {
-          const fetched = categoryRes.data.data.map((item) => {
-            const provider = providerList.find((p) => p.id === item.nhaCungCap);
-            return {
-              id: item.id,
-              categoryCode: item.maDanhMuc,
-              name: item.tenDanhMuc,
-              description: item.moTa,
-              productCount: item.soLuongSanPham,
-              provide: provider?.tenNhaCungCap || "Không rõ",
-              image: item.hinhAnh
-                ? `http://127.0.0.1:8000/storage/${item.hinhAnh}`
-                : null,
-            };
-          });
-          setCategories(fetched);
-          setFilteredCategories(fetched);
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+    form.setFieldsValue({
+      categoryCode: category.categoryCode,
+      name: category.name,
+      description: category.description === "-" ? "" : category.description,
+      productCount: category.productCount,
+      provide: category.providerId,
+    });
+    setFileList(
+      category.image
+        ? [{ uid: "-1", name: "image", status: "done", url: category.image }]
+        : []
+    );
+    setIsModalOpen(true);
+  };
+
+  const handleSaveCategory = async () => {
+    try {
+      setLoading(true);
+      const values = await form.validateFields();
+      const formData = new FormData();
+      formData.append("tenDanhMuc", values.name);
+      formData.append("moTa", values.description || "");
+      formData.append("soLuongSanPham", values.productCount || 0);
+      formData.append("nhaCungCap", values.provide || null);
+
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        const file = fileList[0].originFileObj;
+        if (file.size > 2 * 1024 * 1024) {
+          throw new Error("Kích thước hình ảnh không được vượt quá 2MB");
         }
-      } catch (error) {
-        message.error("Lỗi khi tải danh mục");
+        formData.append("hinhAnh", file);
       }
-    };
 
-    const fetchProviders = async () => {
-      try {
-        const res = await providerApi.getAll();
-        setProviders(res.data.data);
-      } catch (error) {
-        message.error("Lỗi khi tải nhà cung cấp");
+      let response;
+      if (selectedCategory) {
+        response = await categoryApi.update(selectedCategory.id, formData);
+      } else {
+        response = await categoryApi.create(formData);
       }
-    };
 
-    fetchCategories();
-    fetchProviders();
-  }, []);
+      if (response.data.success) {
+        api.success({
+          message: response.data.message,
+          placement: "topRight",
+        });
 
-  // Sidebar items
-  const sidebarItems = [
-    {
-      key: "provide",
-      label: "Nhà cung cấp",
-      icon: <MdHomeWork />,
-      children: providers.map((prov) => ({
-        key: String(prov.id),
-        label: prov.tenNhaCungCap,
-      })),
-    },
-  ];
+        await fetchData();
+        setIsModalOpen(false);
+        setSelectedCategory(null);
+        form.resetFields();
+        setFileList([]);
+      } else {
+        throw new Error(response.data.message || "Thao tác thất bại");
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+        navigate("/login");
+      } else if (error.response?.status === 422) {
+        const errors = error.response.data.errors || {};
+        const errorMessages = Object.values(errors).flat().join(", ");
+        message.error(errorMessages || "Lỗi khi lưu danh mục!");
+      } else {
+        message.error(error.message || error.response?.data?.message || "Lỗi khi lưu danh mục!");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  //handle provide filter
-  const handleProviderFilter = (id) => {
-    if (id === "all") {
+  const handleDeleteCategory = async () => {
+    try {
+      setLoading(true);
+      const response = await categoryApi.delete(selectedCategory.id);
+      if (response.data.success) {
+        api.success({
+          message: response.data.message,
+          placement: "topRight",
+        });
+        await fetchData();
+        setIsModalOpen(false);
+        setSelectedCategory(null);
+        form.resetFields();
+        setFileList([]);
+      } else {
+        throw new Error(response.data.message || "Xóa thất bại");
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+        navigate("/login");
+      } else if (error.response?.status === 400) {
+        message.error(error.response.data.message);
+      } else {
+        message.error(error.response?.data?.message || "Lỗi khi xóa danh mục!");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProviderFilter = (key) => {
+    if (key === "all-categories") {
       setFilteredCategories(categories);
+      message.success("Hiển thị tất cả danh mục");
       return;
     }
 
-    const provider = providers.find((p) => String(p.id) === String(id));
+    const provider = providers.find((p) => String(p.id) === String(key));
     if (!provider) {
       setFilteredCategories(categories);
       message.warning("Không tìm thấy nhà cung cấp tương ứng");
@@ -260,26 +241,59 @@ export default function Category() {
     }
 
     const filtered = categories.filter(
-      (cat) =>
-        cat.provide?.toLowerCase() === provider.tenNhaCungCap.toLowerCase()
+      (cat) => String(cat.providerId) === String(provider.id)
     );
-
     setFilteredCategories(filtered);
+    message.success(`Đã lọc theo nhà cung cấp ${provider.tenNhaCungCap}`);
   };
 
-  // Table columns
   const columns = [
     {
       title: "Hình ảnh",
       dataIndex: "image",
       key: "image",
-      render: (url) => <img src={url} alt="category" style={{ width: 50 }} />,
+      render: (url) => (
+        <div className="image-container">
+          {url && url.startsWith("http") ? (
+            <>
+              <img
+                src={url}
+                alt="category"
+                style={{ width: 50, borderRadius: 4, display: "none" }}
+                onError={(e) => {
+                  console.error(
+                    `tải ảnh thất bại: ${url}, Status: ${e.target.status || 'hiểu mới lạ'}`
+                  );
+                  e.target.style.display = "none";
+                  const fallback = e.target.parentNode.querySelector(".fallback");
+                  if (fallback) {
+                    fallback.style.display = "inline";
+                  }
+                }}
+                onLoad={(e) => {
+                  e.target.style.display = "inline";
+                  const fallback = e.target.parentNode.querySelector(".fallback");
+                  if (fallback) {
+                    fallback.style.display = "none";
+                  }
+                }}
+              />
+              <span className="fallback" style={{ display: "inline" }}>
+                -
+              </span>
+            </>
+          ) : (
+            <span className="fallback" style={{ display: "inline" }}>
+              -
+            </span>
+          )}
+        </div>
+      ),
     },
     { title: "Mã danh mục", dataIndex: "categoryCode", key: "categoryCode" },
     { title: "Tên danh mục", dataIndex: "name", key: "name" },
     { title: "Mô tả", dataIndex: "description", key: "description" },
     { title: "Số sản phẩm", dataIndex: "productCount", key: "productCount" },
-
     { title: "Nhà cung cấp", dataIndex: "provide", key: "provide" },
     {
       title: "Thao tác",
@@ -294,19 +308,31 @@ export default function Category() {
     },
   ];
 
+  const sidebarItems = [
+    {
+      key: "all-categories",
+      label: "Tất cả danh mục",
+      icon: <FaReplyAll />,
+    },
+    {
+      key: "provide",
+      label: "Nhà cung cấp",
+      icon: <MdHomeWork />,
+      children: providers.map((prov) => ({
+        key: String(prov.id),
+        label: prov.tenNhaCungCap,
+        icon: <MdHomeWork />,
+      })),
+    },
+  ];
+
   return (
     <>
       {contextHolder}
       <ManagerLayoutSidebar
         title="DANH MỤC"
         sidebarItems={sidebarItems}
-        onSidebarClick={({ key, keyPath }) => {
-          if (keyPath.includes("provide")) {
-            handleProviderFilter(key);
-          } else {
-            setFilteredCategories(categories);
-          }
-        }}
+        onSidebarClick={({ key }) => handleProviderFilter(key)}
       >
         <div className="category-page">
           <Header className="category__header">
@@ -324,14 +350,19 @@ export default function Category() {
                 <Button
                   type="primary"
                   icon={<FaReplyAll />}
-                  onClick={() => setFilteredCategories(categories)}
+                  onClick={() => handleProviderFilter("all-categories")}
                 >
                   Tất cả
                 </Button>
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    form.resetFields();
+                    setFileList([]);
+                    setIsModalOpen(true);
+                  }}
                 >
                   Thêm mới
                 </Button>
@@ -350,29 +381,31 @@ export default function Category() {
                 </Space>
               }
             >
-              <Table
-                className="category__content-table"
-                columns={columns}
-                dataSource={searchedCategories}
-                rowKey="id"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) =>
-                    `Hiển thị ${range[0]}-${range[1]} của ${total} danh mục`,
-                }}
-                locale={{
-                  emptyText: (
-                    <div className="empty-state">
-                      <div className="empty-icon">
-                        <BiSolidCategory />
+              <Spin spinning={loading}>
+                <Table
+                  className="category__content-table"
+                  columns={columns}
+                  dataSource={searchedCategories}
+                  rowKey="id"
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) =>
+                      `Hiển thị ${range[0]}-${range[1]} của ${total} danh mục`,
+                  }}
+                  locale={{
+                    emptyText: (
+                      <div className="empty-state">
+                        <div className="empty-icon">
+                          <BiSolidCategory />
+                        </div>
+                        <div>Không tìm thấy danh mục nào</div>
                       </div>
-                      <div>Không tìm thấy danh mục nào</div>
-                    </div>
-                  ),
-                }}
-              />
+                    ),
+                  }}
+                />
+              </Spin>
             </Card>
           </Content>
 
@@ -381,7 +414,7 @@ export default function Category() {
               <Space>
                 <EditOutlined />
                 {selectedCategory
-                  ? `Chi tiết danh mục - ${selectedCategory.categoryCode}`
+                  ? `Chi tiết danh mục - ${selectedCategory.name}`
                   : "Tạo danh mục mới"}
               </Space>
             }
@@ -390,11 +423,19 @@ export default function Category() {
               setIsModalOpen(false);
               setSelectedCategory(null);
               form.resetFields();
-              setPreviewImage(null);
+              setFileList([]);
             }}
             width={700}
             footer={[
-              <Button key="cancel" onClick={() => setIsModalOpen(false)}>
+              <Button
+                key="cancel"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedCategory(null);
+                  form.resetFields();
+                  setFileList([]);
+                }}
+              >
                 Hủy
               </Button>,
               <Popconfirm
@@ -411,7 +452,12 @@ export default function Category() {
                   Xóa
                 </Button>
               </Popconfirm>,
-              <Button key="save" type="primary" onClick={handleSaveCategory}>
+              <Button
+                key="save"
+                type="primary"
+                onClick={handleSaveCategory}
+                loading={loading}
+              >
                 {selectedCategory ? "Cập nhật" : "Tạo mới"}
               </Button>,
             ]}
@@ -419,7 +465,15 @@ export default function Category() {
             <Form form={form} layout="vertical">
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item label="Mã danh mục" name="categoryCode">
+                  <Form.Item
+                    label="Mã danh mục"
+                    name="categoryCode"
+                    rules={[
+                      {
+                        required: false,
+                      },
+                    ]}
+                  >
                     <Input disabled />
                   </Form.Item>
                 </Col>
@@ -430,7 +484,11 @@ export default function Category() {
                     rules={[
                       {
                         required: true,
-                        message: "Vui lòng nhập tên danh mục!",
+                        message: "Tên danh mục không được để trống",
+                      },
+                      {
+                        max: 255,
+                        message: "Tên danh mục không được vượt quá 255 ký tự",
                       },
                     ]}
                   >
@@ -438,12 +496,31 @@ export default function Category() {
                   </Form.Item>
                 </Col>
                 <Col span={24}>
-                  <Form.Item label="Mô tả" name="description">
+                  <Form.Item
+                    label="Mô tả"
+                    name="description"
+                    rules={[
+                      {
+                        type: "string",
+                        message: "Mô tả phải là chuỗi ký tự",
+                      },
+                    ]}
+                  >
                     <Input.TextArea rows={3} />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item label="Số sản phẩm" name="productCount">
+                  <Form.Item
+                    label="Số sản phẩm"
+                    name="productCount"
+                    rules={[
+                      {
+                        type: "number",
+                        min: 0,
+                        message: "Số lượng sản phẩm không được âm",
+                      },
+                    ]}
+                  >
                     <InputNumber min={0} style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
@@ -451,39 +528,64 @@ export default function Category() {
                   <Form.Item
                     label="Hình ảnh"
                     name="image"
-                    valuePropName="imageUrl"
+                    rules={[
+                      {
+                        validator: async (_, value) => {
+                          if (fileList.length > 0 && fileList[0].originFileObj) {
+                            const file = fileList[0].originFileObj;
+                            const validTypes = [
+                              "image/jpeg",
+                              "image/png",
+                              "image/jpg",
+                              "image/gif",
+                              "image/svg+xml",
+                            ];
+                            if (!validTypes.includes(file.type)) {
+                              throw new Error(
+                                "Hình ảnh phải có định dạng: jpeg, png, jpg, gif, svg"
+                              );
+                            }
+                            if (file.size > 2 * 1024 * 1024) {
+                              throw new Error(
+                                "Kích thước hình ảnh không được vượt quá 2MB"
+                              );
+                            }
+                          }
+                          return Promise.resolve();
+                        },
+                      },
+                    ]}
                   >
                     <Upload
-                      name="file"
+                      name="image"
                       listType="picture"
-                      showUploadList={false}
-                      beforeUpload={(file) => {
-                        form.setFieldValue("image", file);
-                        const reader = new FileReader();
-                        reader.readAsDataURL(file);
-                        reader.onload = () => {
-                          setPreviewImage(reader.result);
-                        };
-                        return false;
+                      fileList={fileList}
+                      beforeUpload={() => false}
+                      onChange={({ fileList: newFileList }) => {
+                        setFileList(newFileList);
                       }}
+                      maxCount={1}
+                      accept="image/jpeg,image/png,image/jpg,image/gif,image/svg+xml"
                     >
                       <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
                     </Upload>
-                    {previewImage && (
-                      <img
-                        src={previewImage}
-                        alt="preview"
-                        style={{ width: 100, marginTop: 10, borderRadius: 8 }}
-                      />
-                    )}
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item label="Nhà cung cấp" name="provide">
-                    <Select>
+                  <Form.Item
+                    label="Nhà cung cấp"
+                    name="provide"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng chọn nhà cung cấp",
+                      },
+                    ]}
+                  >
+                    <Select placeholder="Chọn nhà cung cấp">
                       {providers.map((prov) => (
-                        <Option key={prov.id} value={prov.name}>
-                          {prov.name}
+                        <Option key={prov.id} value={prov.id}>
+                          {prov.tenNhaCungCap}
                         </Option>
                       ))}
                     </Select>
