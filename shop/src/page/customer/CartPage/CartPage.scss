@@ -2,7 +2,9 @@
   padding: 20px;
   background-color: var(--main);
   min-height: 100vh;
-  margin-top: 160px;
+  margin-top: 160px !important;
+  margin-left: 76px;
+  margin-right: 76px;
   display: flex;
   justify-content: center;
 
@@ -154,6 +156,7 @@
           .quantity-section {
             display: flex;
             justify-content: flex-end;
+            margin-right: 20px;
 
             .quantity-controls-new {
               display: flex;
@@ -202,7 +205,7 @@
             border: 1px solid #ffadd6;
             border-radius: 6px;
             padding: 4px 6px;
-            margin-left: 500px;
+            margin-left: 480px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -232,37 +235,6 @@
       font-weight: 600;
       margin-bottom: 16px;
     }
-
-    // .discount-section {
-    //   .discount-input {
-    //     border-radius: 4px 0 0 4px;
-    //   }
-
-    //   .apply-btn {
-    //     border-radius: 0 4px 4px 0;
-    //     background-color: #1890ff;
-    //     border-color: #1890ff;
-    //   }
-
-    //   .select-code-btn {
-    //     margin-top: 12px;
-    //     border: 1px solid #1890ff;
-    //     color: #1890ff;
-    //     background-color: white;
-
-    //     &:hover {
-    //       background-color: #f0f8ff;
-    //     }
-    //   }
-    // }
-
-    // .kicoin-section {
-    //   .kicoin-toggle {
-    //     display: flex;
-    //     justify-content: space-between;
-    //     align-items: center;
-    //   }
-    // }
 
     .order-summary {
       .summary-row {

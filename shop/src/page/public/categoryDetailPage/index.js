@@ -136,6 +136,7 @@ function CategoryDetailPage() {
   };
 
   const handleBuyNow = () => {
+    navigate("/buying")
     setIsModalVisible(false);
   };
 

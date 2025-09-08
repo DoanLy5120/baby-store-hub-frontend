@@ -5,10 +5,7 @@ import {
   Col,
   Card,
   Button,
-  Input,
-  Switch,
   Divider,
-  Space,
   Image,
 } from "antd";
 import { MinusOutlined, PlusOutlined } from "@ant-design/icons";
@@ -17,12 +14,10 @@ import "./CartPage.scss";
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
-  const [discountCode, setDiscountCode] = useState("");
-  const [useKiCoin, setUseKiCoin] = useState(false);
 
   const navigate = useNavigate();
   const handleGoToCheckout = () => {
-    navigate("/checkout");
+    navigate("/buying");
   };
 
   const updateQuantity = (id, newQuantity) => {
@@ -186,36 +181,6 @@ const CartPage = () => {
 
         <Col xs={24} lg={8}>
           <Card className="summary-card">
-            {/* <div className="discount-section">
-              <h3 className="section-title">Mã giảm giá</h3>
-              <Space.Compact style={{ width: "100%" }}>
-                <Input
-                  placeholder="Nhập mã giảm giá"
-                  value={discountCode}
-                  onChange={(e) => setDiscountCode(e.target.value)}
-                  className="discount-input"
-                />
-                <Button type="primary" className="apply-btn">
-                  ÁP DỤNG
-                </Button>
-              </Space.Compact>
-              <Button block className="select-code-btn">
-                CHỌN MÃ
-              </Button>
-            </div> */}
-
-            {/* <Divider /> */}
-
-            {/* <div className="kicoin-section">
-              <h3 className="section-title">Sử dụng điểm tích</h3>
-              <div className="kicoin-toggle">
-                <span>Dùng 100 điểm</span>
-                <Switch checked={useKiCoin} onChange={setUseKiCoin} />
-              </div>
-            </div> */}
-
-            {/* <Divider /> */}
-
             <div className="order-summary">
               <h3 className="section-title">Thông tin đơn hàng</h3>
 
@@ -244,7 +209,7 @@ const CartPage = () => {
               className="continue-btn"
               onClick={handleGoToCheckout}
             >
-              ĐẶT HÀNG
+              MUA HÀNG
             </Button>
           </Card>
         </Col>
