@@ -121,6 +121,7 @@ const HomePage = () => {
   };
 
   const handleBuyNow = () => {
+    navigate("/buying")
     setIsModalVisible(false);
   };
 

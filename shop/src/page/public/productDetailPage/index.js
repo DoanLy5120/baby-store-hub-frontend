@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import productApi from "../../../api/productApi";
 import {
@@ -7,7 +7,6 @@ import {
   Spin,
   InputNumber,
   Button,
-  message,
   Divider,
   notification,
 } from "antd";
@@ -39,6 +38,7 @@ const responsive = {
 
 const ProductDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -126,7 +126,7 @@ const ProductDetailPage = () => {
   };
 
   const handleBuyNow = () => {
-    message.success(`Chuyển đến thanh toán ${quantity} sản phẩm.`);
+    navigate("/buying")
   };
 
   if (loading) {

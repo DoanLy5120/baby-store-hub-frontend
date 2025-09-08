@@ -1,0 +1,274 @@
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 16px 20px;
+  margin-top: 160px;
+  border-bottom: 1px solid #eee;
+
+  .back-icon {
+    font-size: 18px;
+    margin-right: 12px;
+    cursor: pointer;
+    color: #666;
+  }
+
+  .header-title {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.buying-container {
+  margin: 10px auto;
+  padding-bottom: 10px;
+  background-color: var(--main);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+
+  .ant-card {
+    margin-bottom: 10px !important;
+  }
+
+  .main-content {
+    display: flex;
+    gap: 20px;
+
+    .left-section {
+      width: 900px;
+
+      &.ant-card {
+        border-radius: 10px !important;
+        overflow: hidden; // giữ nội dung không tràn ra
+        background: #fff;
+      }
+
+      .ant-card-body {
+        background-color: #fff !important;
+        padding: 16px;
+      }
+
+      .address-card {
+        margin-bottom: 16px;
+        border-radius: 10px !important;
+
+        .address-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+
+          .change-address {
+            color: #1890ff;
+            cursor: pointer;
+            font-weight: 600;
+          }
+        }
+
+        .address-info {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+
+          .location-icon {
+            color: #ff4d4f;
+            margin-top: 2px;
+          }
+        }
+      }
+
+      .products-card {
+        border-radius: 10px !important;
+        overflow: hidden;
+
+        .products-table {
+          .ant-table-thead > tr > th {
+            background-color: #e6f7ff !important; // xanh nhạt pastel
+            color: #000 !important; // chữ đen
+            font-weight: 600;
+          }
+
+          .product-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            .product-image {
+              width: 60px;
+              height: 60px;
+              object-fit: cover;
+              border-radius: 4px;
+            }
+
+            .product-details {
+              .product-name {
+                font-weight: 500;
+                margin-bottom: 4px;
+              }
+
+              .product-description {
+                color: #666;
+                font-size: 12px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .right-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .ant-divider {
+        margin: 0 !important;
+      }
+
+      .payment-section {
+        background: #fff;
+        border-radius: 10px;
+
+        .section-title {
+          color: #f5077a;
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 16px;
+        }
+
+        .discount-section {
+          padding: 20px;
+
+          .discount-input {
+            border-radius: 4px 0 0 4px;
+          }
+
+          .apply-btn {
+            border-radius: 0 4px 4px 0;
+            background-color: #1890ff;
+            border-color: #1890ff;
+          }
+
+          .select-code-btn {
+            margin-top: 12px;
+            border: 1px solid #1890ff;
+            color: #1890ff;
+            background-color: white;
+
+            &:hover {
+              background-color: #f0f8ff;
+            }
+          }
+        }
+
+        .kicoin-section {
+          padding: 20px;
+
+          .kicoin-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+        }
+
+        .payment-card {
+          padding: 20px;
+
+          .payment-note {
+            color: #666;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 12px;
+          }
+
+          .payment-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
+            .ant-radio-wrapper {
+              display: flex;
+              align-items: center;
+
+              .payment-icon {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+                margin-right: 8px;
+
+                &.cash-icon {
+                  background-color: #52c41a;
+                }
+
+                &.card-icon {
+                  background-color: #ff4d4f;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .summary-card {
+        .summary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+
+          &.total-row {
+            margin-bottom: 0;
+
+            .final-total {
+              color: #ff4d4f;
+              font-size: 16px;
+            }
+          }
+        }
+      }
+
+      .cart-card .ant-card-body {
+        background-color: #fff !important;
+        border-radius: 10px !important;
+        min-height: 590px;
+      }
+
+      .summary-card .ant-card-body {
+        background-color: #fff !important;
+        border-radius: 10px !important;
+      }
+
+      .order-button {
+        width: 100%;
+        height: 48px;
+        font-size: 16px;
+        font-weight: 600;
+        background-color: #1890ff;
+        border: none;
+
+        &:hover {
+          background-color: #40a9ff;
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .shopping-cart {
+    padding: 10px;
+
+    .main-content {
+      flex-direction: column;
+
+      .left-section,
+      .right-section {
+        flex: 1;
+      }
+    }
+  }
+}

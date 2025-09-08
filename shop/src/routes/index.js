@@ -15,6 +15,7 @@ import Provider from "../page/manager/Provider/index";
 import InventoryCheckSheet from "../page/manager/InventoryCheckSheet/index";
 import GoodsReceipt from "../page/manager/GoodsReceipt/index";
 import SearchResultsPage from "../page/public/SearchResultsPage/SearchResultsPage";
+import Buy from "../page/customer/BuyPage";
 
 const publicRoutes = [
   { path: "/", component: HomePage, layout: DefaultLayout },
@@ -64,6 +65,11 @@ const privateRoutes = [
     path: "/manager/giao-dich/nhap-hang",
     component: GoodsReceipt,
     layout: ManagerLayout,
+  },
+  {
+    path: "/buying",
+    component: Buy,
+    layout: DefaultLayout,
   },
 ];
 
