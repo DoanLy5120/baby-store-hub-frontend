@@ -5,10 +5,12 @@
   margin-top: 24px;
 }
 
+
 .info__content.info__content-card,
 .info__content .ant-card-body {
   background: white !important;
 }
+
 
 .input-field {
   width: 360px;
@@ -68,6 +70,7 @@
   border-radius: 3px;
   display: inline-block;
   margin-right: 8px;
+
 }
 .dot--orange {
   background: #ff8a00;
@@ -130,7 +133,6 @@
   background: white;
   margin-top: var(--header-height, 165px);
   border-radius: 12px;
-
   max-width: 1200px;
   padding: 0 50px;
   background: white;
@@ -141,6 +143,7 @@
   background: #ff4da6 !important;
   border-color: #ff4da6 !important;
   color: #fff !important;
+  
 }
 .btn-pink.ant-btn:hover,
 .btn-pink.ant-btn-primary:hover {

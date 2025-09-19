@@ -22,6 +22,7 @@ import {
   CameraOutlined,
 } from "@ant-design/icons";
 
+
 const API_ORIGIN = "http://127.0.0.1:8000";
 
 const toAbsoluteAvatarUrl = (u) => {
@@ -92,7 +93,7 @@ export default function Info() {
       setLoading(false);
     }
   };
-
+  
   const onDeleteAvatar = () => {
     Modal.confirm({
       title: "Xoá avatar?",
