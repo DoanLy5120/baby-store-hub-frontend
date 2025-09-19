@@ -12,6 +12,11 @@
     transition: all 0.3s ease;
   }
 
+  .cart-card{
+    min-width: 870px;
+    margin-right: 560px;
+  }
+
   .cart-card,
   .summary-card {
     border-radius: 10px !important;

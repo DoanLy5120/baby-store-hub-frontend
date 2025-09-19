@@ -40,6 +40,7 @@ import { formatVND } from "../../../utils/formatter";
 import { formatTime } from "../../../utils/formaterTime";
 import categoryApi from "../../../api/categoryApi";
 import productApi from "../../../api/productApi";
+import cartApi from "../../../api/cartApi";
 
 const { Content } = Layout;
 const { Meta } = Card;
@@ -62,7 +63,7 @@ const HomePage = () => {
     setIsModalVisible(true);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (quantity > selectedProduct.soLuongTon) {
       api.warning({
         message: `Vượt quá giới hạn tồn kho`,
@@ -71,53 +72,37 @@ const HomePage = () => {
       return;
     }
 
-    // Lấy giỏ hàng hiện tại từ localStorage
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    try {
+      const res = await cartApi.add({
+        san_pham_id: selectedProduct.id,
+        so_luong: quantity,
+      });
 
-    // Kiểm tra sản phẩm đã tồn tại chưa
-    const existingIndex = cart.findIndex(
-      (item) => item.id === selectedProduct.id
-    );
+      // Nếu backend trả về message hoặc data thì coi như thành công
+      if (res?.message || res?.data) {
+        // Trigger custom event để header cập nhật cartCount ngay lập tức
+        window.dispatchEvent(new Event("cart-updated"));
 
-    if (existingIndex !== -1) {
-      // Nếu đã tồn tại, tăng số lượng
-      cart[existingIndex].quantity += quantity;
-    } else {
-      // Nếu chưa, thêm mới
-      let priceWithVAT = selectedProduct.giaBan;
-      if (typeof selectedProduct.VAT !== "undefined") {
-        priceWithVAT = selectedProduct.giaBan * (1 + selectedProduct.VAT / 100);
+        api.success({
+          message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
+          placement: "topRight",
+        });
+
+        setIsModalVisible(false);
+      } else {
+        api.error({
+          message: "Không thể thêm sản phẩm vào giỏ",
+          description: res?.message || "Lỗi không xác định",
+          placement: "topRight",
+        });
       }
-      // Nếu là sản phẩm sale có giá sau giảm thì lấy giá đó
-      if (typeof selectedProduct.giaSauGiam !== "undefined") {
-        priceWithVAT = selectedProduct.giaSauGiam;
-      }
-      cart.push({
-        id: selectedProduct.id,
-        name: selectedProduct.tenSanPham,
-        desc: selectedProduct.moTa,
-        price: selectedProduct.giaBan,
-        priceWithVAT: priceWithVAT,
-        image: selectedProduct.hinhAnh,
-        quantity: quantity,
-        stock: selectedProduct.soLuongTon,
-        isHot: selectedProduct.is_noi_bat,
-        VAT: selectedProduct.VAT,
-        discountPercent: selectedProduct.discountPercent || 0,
+    } catch (error) {
+      api.error({
+        message: "Không thể thêm sản phẩm vào giỏ",
+        description: error.response?.data?.message || error.message,
+        placement: "topRight",
       });
     }
-
-    // Cập nhật lại localStorage
-    localStorage.setItem("cart", JSON.stringify(cart));
-    // Trigger custom event để header cập nhật cartCount ngay lập tức
-    window.dispatchEvent(new Event("cart-updated"));
-
-    api.success({
-      message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
-      placement: "topRight",
-    });
-
-    setIsModalVisible(false);
   };
 
   const handleBuyNow = () => {
