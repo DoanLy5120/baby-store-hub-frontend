@@ -12,6 +12,15 @@ import {
 } from "antd";
 import profileApi from "../../../api/profileApi";
 import dayjs from "dayjs";
+import {
+  UserOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  HomeOutlined,
+  CalendarOutlined,
+  LockOutlined,
+  CameraOutlined,
+} from "@ant-design/icons";
 
 const API_ORIGIN = "http://127.0.0.1:8000";
 
@@ -84,7 +93,6 @@ export default function Info() {
     }
   };
 
-  // Xóa avatar
   const onDeleteAvatar = () => {
     Modal.confirm({
       title: "Xoá avatar?",
@@ -129,18 +137,22 @@ export default function Info() {
       <div className="info__aside">
         <Card title="TÀI KHOẢN CỦA TÔI" className="info__aside-card">
           <div
-            className={`aside-item ${active === "profile" ? "active" : ""}`}
+            className={`aside-item ${
+              active === "profile" ? "active dot--orange" : ""
+            }`}
             onClick={() => setActive("profile")}
           >
             <span className="dot dot--orange" />
-            Hồ sơ
+            <UserOutlined /> Hồ sơ
           </div>
           <div
-            className={`aside-item ${active === "password" ? "active" : ""}`}
+            className={`aside-item ${
+              active === "password" ? "active dot--blue" : ""
+            }`}
             onClick={() => setActive("password")}
           >
             <span className="dot dot--blue" />
-            Mật khẩu
+            <LockOutlined /> Mật khẩu
           </div>
         </Card>
       </div>
@@ -158,7 +170,11 @@ export default function Info() {
                       { required: true, message: "Vui lòng nhập họ và tên" },
                     ]}
                   >
-                    <Input placeholder="Nhập họ và tên" />
+                    <Input
+                      prefix={<UserOutlined />}
+                      placeholder="Nhập họ và tên"
+                      className="input-field"
+                    />
                   </Form.Item>
 
                   <Form.Item
@@ -169,7 +185,11 @@ export default function Info() {
                       { type: "email", message: "Email không hợp lệ" },
                     ]}
                   >
-                    <Input placeholder="Nhập email của bạn" />
+                    <Input
+                      prefix={<MailOutlined />}
+                      placeholder="Nhập email của bạn"
+                      className="input-field"
+                    />
                   </Form.Item>
 
                   <Form.Item
@@ -179,7 +199,11 @@ export default function Info() {
                       { required: true, message: "Vui lòng nhập địa chỉ" },
                     ]}
                   >
-                    <Input placeholder="Nhập địa chỉ của bạn" />
+                    <Input
+                      prefix={<HomeOutlined />}
+                      placeholder="Nhập địa chỉ của bạn"
+                      className="input-field"
+                    />
                   </Form.Item>
 
                   <Form.Item
@@ -189,7 +213,7 @@ export default function Info() {
                       { required: true, message: "Vui lòng chọn ngày sinh" },
                     ]}
                   >
-                    <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
+                    <DatePicker format="YYYY-MM-DD" className="input-field" />
                   </Form.Item>
 
                   <Form.Item
@@ -202,7 +226,11 @@ export default function Info() {
                       },
                     ]}
                   >
-                    <Input placeholder="Nhập số điện thoại" />
+                    <Input
+                      prefix={<PhoneOutlined />}
+                      placeholder="Nhập số điện thoại"
+                      className="input-field"
+                    />
                   </Form.Item>
 
                   <div className="form-actions">
@@ -211,6 +239,7 @@ export default function Info() {
                       className="btn-pink"
                       htmlType="submit"
                       loading={loading}
+                      icon={<UserOutlined />}
                     >
                       Cập nhật
                     </Button>
@@ -218,6 +247,7 @@ export default function Info() {
                       className="btn-blue"
                       htmlType="button"
                       onClick={() => form.resetFields()}
+                      icon={<HomeOutlined />}
                     >
                       Hủy bỏ
                     </Button>
@@ -228,7 +258,7 @@ export default function Info() {
               <div className="profile-grid__avatar">
                 <div className="avatar-box">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="avatar" />
+                    <img src={toAbsoluteAvatarUrl(avatarUrl)} alt="avatar" />
                   ) : (
                     <div className="avatar-placeholder">Avatar</div>
                   )}
@@ -242,7 +272,12 @@ export default function Info() {
                     return false;
                   }}
                 >
-                  <Button className="btn-change-avatar">Thay avatar</Button>
+                  <Button
+                    className="btn-change-avatar"
+                    icon={<CameraOutlined />}
+                  >
+                    Thay avatar
+                  </Button>
                 </Upload>
 
                 {avatarUrl && (
@@ -267,7 +302,10 @@ export default function Info() {
                   { required: true, message: "Vui lòng nhập mật khẩu cũ" },
                 ]}
               >
-                <Input.Password placeholder="Nhập mật khẩu cũ" />
+                <Input.Password
+                  placeholder="Nhập mật khẩu cũ"
+                  className="input-field"
+                />
               </Form.Item>
 
               <Form.Item
@@ -277,7 +315,10 @@ export default function Info() {
                   { required: true, min: 8, message: "Tối thiểu 8 ký tự" },
                 ]}
               >
-                <Input.Password placeholder="Nhập lại mật khẩu mới" />
+                <Input.Password
+                  placeholder="Nhập lại mật khẩu mới"
+                  className="input-field"
+                />
               </Form.Item>
 
               <Form.Item
@@ -297,7 +338,10 @@ export default function Info() {
                   }),
                 ]}
               >
-                <Input.Password placeholder="Xác nhận mật khẩu mới" />
+                <Input.Password
+                  placeholder="Xác nhận mật khẩu mới"
+                  className="input-field"
+                />
               </Form.Item>
 
               <div className="form-actions">
