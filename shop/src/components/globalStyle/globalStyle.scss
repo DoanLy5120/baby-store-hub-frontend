@@ -3,7 +3,7 @@
 @import "~@fortawesome/fontawesome-free/css/all.min.css";
 
 :root {
-  --primary: rgb(90, 103, 248);
+  --primary: rgb(138, 150, 255);
   --main: rgb(244, 247, 255);
   --black: #000;
   --white: #fff;
@@ -42,7 +42,6 @@ header {
 .container {
   width: 100%;
   margin: auto;
-  background: var(--main);
 }
 
 .row {

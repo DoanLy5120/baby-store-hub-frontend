@@ -1,7 +1,7 @@
 .category-page {
   min-height: 100vh;
   background: rgb(244, 247, 255);
-  display: flex;
+  display: flex !important;
 
   // Sidebar
   .sidebar {

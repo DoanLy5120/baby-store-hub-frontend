@@ -1,7 +1,7 @@
 .homepage {
   display: flex;
   min-height: 100vh;
-  background: rgb(244, 247, 255);
+  margin-top: 30px;
 
   // Sidebar
   .sidebar {
@@ -303,7 +303,7 @@
                 width: 290px;
                 object-fit: contain;
                 padding: 12px;
-                background: #fff;
+                background: #ffffff;
               }
 
               .discount-tag {
@@ -412,11 +412,6 @@
         .hot-products-carousel {
           padding: 20px;
           background: #fff;
-          // linear-gradient(
-          //   to bottom right,
-          //   rgb(152, 202, 253),
-          //   #f0c0dc
-          // );
           border-radius: 8px;
           margin: 40px 0;
 
@@ -441,6 +436,7 @@
           .react-multi-carousel-item {
             display: flex;
             justify-content: center;
+            align-items: stretch; /* đảm bảo tất cả item có cùng chiều cao */
           }
 
           .react-multi-carousel-list {
@@ -452,9 +448,25 @@
             overflow: hidden;
             transition: box-shadow 0.3s ease;
             border: 1px solid #ededed;
-            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            height: 420px; /* tăng chiều cao để chứa tên 2 dòng */
+            width: 100%; /* đảm bảo width đồng nhất */
 
+            &:hover {
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+              transform: translateY(-4px);
+            }
+
+            /* vùng ảnh */
             .product-image-container {
+              position: relative; /* để tag bám theo */
+              height: 220px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              background: #ffffff;
+
               .gift-tag,
               .hot-tag,
               .age-tag {
@@ -474,40 +486,51 @@
               }
 
               .age-tag {
-                top: 180px;
+                bottom: 8px; /* thay vì top cứng */
                 left: 8px;
               }
             }
 
-            &:hover {
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-              transform: translateY(-4px);
-            }
-
+            /* cover antd */
             .ant-card-cover {
-              background-color: #f9f9f9;
+              height: 220px;
               display: flex;
               justify-content: center;
               align-items: center;
+              background-color: #ffffff;
 
               img {
-                height: 220px;
-                width: 290px;
+                max-height: 100%;
+                max-width: 100%;
                 object-fit: contain;
                 padding: 12px;
-                background: #fff;
               }
             }
 
+            /* body card */
+            .ant-card-body {
+              flex: 1; /* chiếm hết phần còn lại */
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+            }
+
             .product-title {
-              font-size: 16px;
+              font-size: 15px;
               font-weight: 600;
               color: #333;
-              margin-top: 10px;
-              height: 44px;
+              margin-top: 8px;
+              margin-bottom: 8px;
+              height: 48px; /* tăng chiều cao để chứa 2 dòng */
+              line-height: 1.4;
               overflow: hidden;
               display: -webkit-box;
+              -webkit-line-clamp: 2; /* chỉ hiển thị 2 dòng */
+              line-clamp: 2; /* thuộc tính chuẩn */
               -webkit-box-orient: vertical;
+              word-wrap: break-word;
+              word-break: break-word;
+              text-align: left;
             }
 
             .product-info {

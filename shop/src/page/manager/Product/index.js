@@ -405,18 +405,18 @@ export default function Product() {
         </Tag>
       ),
     },
-    {
-      title: "Nổi bật",
-      dataIndex: "isFeatured",
-      key: "isFeatured",
-      render: (isFeatured, record) => (
-        <Switch
-          checked={isFeatured === 1}
-          onChange={() => handleToggleFeatured(record.id, isFeatured)}
-          loading={loading}
-        />
-      ),
-    },
+    // {
+    //   title: "Nổi bật",
+    //   dataIndex: "isFeatured",
+    //   key: "isFeatured",
+    //   render: (isFeatured, record) => (
+    //     <Switch
+    //       checked={isFeatured === 1}
+    //       onChange={() => handleToggleFeatured(record.id, isFeatured)}
+    //       loading={loading}
+    //     />
+    //   ),
+    // },
     {
       title: "Thao tác",
       key: "action",
