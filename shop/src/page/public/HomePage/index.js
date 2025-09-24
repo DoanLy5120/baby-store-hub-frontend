@@ -78,9 +78,7 @@ const HomePage = () => {
         so_luong: quantity,
       });
 
-      // Nếu backend trả về message hoặc data thì coi như thành công
       if (res?.message || res?.data) {
-        // Trigger custom event để header cập nhật cartCount ngay lập tức
         window.dispatchEvent(new Event("cart-updated"));
 
         api.success({
@@ -106,7 +104,7 @@ const HomePage = () => {
   };
 
   const handleBuyNow = () => {
-    navigate("/buying")
+    navigate("/buying");
     setIsModalVisible(false);
   };
 
@@ -127,54 +125,53 @@ const HomePage = () => {
     fetchCategories();
   }, []);
 
+  const mapSanPham = (item) => {
+    const giaBan = parseFloat(item.giaBan);
+    const vat = parseFloat(item.VAT || 0);
+    const flashSale = parseFloat(item.flash_sale || 0);
+
+    // Giá sau VAT
+    const giaSauVAT = giaBan * (1 + vat / 100);
+
+    // Giá cuối cùng sau flash sale
+    const gia_cuoi = flashSale > 0 ? giaSauVAT * (1 - flashSale) : giaSauVAT;
+
+    return {
+      id: item.id,
+      tenSanPham: item.tenSanPham || item.ten, // ✅ để UI dùng `tenSanPham`
+      hinhAnh: item.hinhAnh,
+      moTa: item.moTa,
+      giaBan,
+      VAT: vat,
+      giaSauVAT: Math.round(giaSauVAT),
+      gia_cuoi: Math.round(gia_cuoi),
+      discountPercent: Math.round(flashSale * 100), // để hiện % giảm giá
+      is_noi_bat: item.is_noi_bat,
+      flash_sale: flashSale,
+      soLuongTon: item.soLuongTon || item.tonKho, // ✅ để UI dùng `soLuongTon`
+      danhMuc: item.danh_muc?.tenDanhMuc,
+      soLuong: item.soLuong || 1,
+      thanh_tien: item.thanh_tien,
+    };
+  };
+
   useEffect(() => {
-    const fetchHotProducts = async () => {
+    const fetchProducts = async () => {
       try {
-        const response = await productApi.getHotProducts();
-        const allProducts = response.data.data;
+        const res = await productApi.getHotProducts(); // gọi /khachHang/san-pham
+        const allProducts = res.data?.data.map(mapSanPham) || [];
 
-        const filtered = allProducts.filter(
-          (product) => product.is_noi_bat === 1
-        );
-        setHotProducts(filtered);
+        const hotList = allProducts.filter((p) => p.is_noi_bat === 1);
+        const saleList = allProducts.filter((p) => p.is_noi_bat === 0);
+
+        setHotProducts(hotList);
+        setSaleProducts(saleList);
       } catch (error) {
-        console.error("Lỗi khi lấy sản phẩm nổi bật:", error);
+        console.error("❌ Lỗi khi fetch sản phẩm:", error.response || error);
       }
     };
 
-    const fetchFlashSaleProducts = async () => {
-      try {
-        const response = await productApi.getHotProducts();
-        const allProducts = response.data.data;
-
-        const filtered = allProducts
-          .filter((product) => product.is_noi_bat === 0)
-          .map((item, index) => {
-            const discountPercent = Math.floor(Math.random() * 30) + 20; // từ 20 đến 49%
-            const giaGoc = item.giaBan * (1 + item.VAT / 100); // tính giá gốc có VAT
-            const giaSauGiam = giaGoc - (giaGoc * discountPercent) / 100;
-
-            return {
-              ...item,
-              discountPercent,
-              giaSauGiam: Math.round(giaSauGiam), // bạn có thể format ngay tại đây nếu muốn
-              soldCount:
-                index % 3 === 0
-                  ? "Vừa mở bán"
-                  : index % 3 === 1
-                  ? "Đã bán 2"
-                  : "Đã bán 5",
-            };
-          });
-
-        setSaleProducts(filtered);
-      } catch (error) {
-        console.error("Lỗi khi lấy sản phẩm flash sale:", error);
-      }
-    };
-
-    fetchHotProducts();
-    fetchFlashSaleProducts();
+    fetchProducts();
   }, []);
 
   useEffect(() => {
@@ -478,6 +475,12 @@ const HomePage = () => {
                   autoPlaySpeed={3000}
                 >
                   {saleProducts.map((product, index) => {
+                    const soldCount =
+                      index % 3 === 0
+                        ? "Vừa mở bán"
+                        : index % 3 === 1
+                        ? "Đã bán 2"
+                        : "Đã bán 5";
                     return (
                       <div
                         key={product.id}
@@ -494,7 +497,10 @@ const HomePage = () => {
                           </div>
                         </div>
                         <div className="product-price">
-                          <strong>{formatVND(product.giaSauGiam)}</strong>
+                          <div className="product-title">
+                            {product.tenSanPham}
+                          </div>
+                          <strong>{formatVND(product.gia_cuoi)}</strong>
                           <div
                             style={{
                               textDecoration: "line-through",
@@ -502,9 +508,7 @@ const HomePage = () => {
                               fontSize: "13px",
                             }}
                           >
-                            {formatVND(
-                              product.giaBan * (1 + product.VAT / 100)
-                            )}
+                            {formatVND(product.giaSauVAT)}
                           </div>
                         </div>
                         <div className="product-meta">
@@ -512,7 +516,7 @@ const HomePage = () => {
                             <span role="img" aria-label="hot">
                               🔥
                             </span>{" "}
-                            {product.soldCount}
+                            {soldCount}
                           </span>
                           <div className="product-actions">
                             <Button
@@ -623,9 +627,7 @@ const HomePage = () => {
                                 </div>
                                 <div className="price-section">
                                   <span className="current-price">
-                                    {formatVND(
-                                      product.giaBan * (1 + product.VAT / 100)
-                                    )}
+                                    {formatVND(product.gia_cuoi)}
                                   </span>
                                   <div className="product-actions">
                                     <Button

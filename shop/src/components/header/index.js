@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import "./header.scss"
-import canhbaoImg from "../../assets/img/header/canhbao.png"
-import logo from "../../assets/img/header/logo.png"
-import { Button, Menu } from "antd"
-import { formatVND } from "../../utils/formatter"
-import { Link } from "react-router-dom"
-import { useNavigate } from "react-router-dom"
-import { useEffect, useState, useRef } from "react"
-import { AiFillHome } from "react-icons/ai"
-import { FaBoxOpen } from "react-icons/fa6"
-import { IoNotifications } from "react-icons/io5"
-import { RiContactsBook3Fill } from "react-icons/ri"
-import { Dropdown, Space, Input, Modal } from "antd"
-import { FaChevronDown } from "react-icons/fa"
-import { HiOutlineShoppingCart } from "react-icons/hi"
-import productApi from "../../api/productApi"
-import cartApi from "../../api/cartApi"
+import "./header.scss";
+import canhbaoImg from "../../assets/img/header/canhbao.png";
+import logo from "../../assets/img/header/logo.png";
+import { Button, Menu } from "antd";
+import { formatVND } from "../../utils/formatter";
+import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { AiFillHome } from "react-icons/ai";
+import { FaBoxOpen } from "react-icons/fa6";
+import { IoNotifications } from "react-icons/io5";
+import { RiContactsBook3Fill } from "react-icons/ri";
+import { Dropdown, Space, Input, Modal } from "antd";
+import { FaChevronDown } from "react-icons/fa";
+import { HiOutlineShoppingCart } from "react-icons/hi";
+import productApi from "../../api/productApi";
+import cartApi from "../../api/cartApi";
 
 //List navbar
 const navbarItems = [
@@ -50,38 +50,38 @@ const navbarItems = [
     key: "contact",
     icon: <RiContactsBook3Fill />,
   },
-]
+];
 
 function Header() {
-  const navigate = useNavigate()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [current, setCurrent] = useState("")
-  const [cartCount, setCartCount] = useState(0)
-  const [suggestions, setSuggestions] = useState([])
-  const [searchInput, setSearchInput] = useState("")
-  const [isScrolled, setIsScrolled] = useState(false)
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [current, setCurrent] = useState("");
+  const [cartCount, setCartCount] = useState(0);
+  const [suggestions, setSuggestions] = useState([]);
+  const [searchInput, setSearchInput] = useState("");
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Modal login
-  const [openModal, setOpenModal] = useState(false)
+  const [openModal, setOpenModal] = useState(false);
 
-  const searchRef = useRef(null)
+  const searchRef = useRef(null);
 
   // Enhanced scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Xử lý đăng xuất
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn")
-    setIsLoggedIn(false)
-    setCartCount(0)
-    navigate("/")
-  }
+    localStorage.removeItem("isLoggedIn");
+    setIsLoggedIn(false);
+    setCartCount(0);
+    navigate("/");
+  };
 
   // Dropdown userItems với đăng xuất
   const userItems = [
@@ -93,148 +93,142 @@ function Header() {
       key: "2",
       label: <span onClick={handleLogout}>Đăng xuất</span>,
     },
-  ]
+  ];
 
   //search
-  const { Search } = Input
+  const { Search } = Input;
 
   const onSearch = (value) => {
-    console.log("Hàm onSearch đã được gọi với từ khóa:", value)
+    console.log("Hàm onSearch đã được gọi với từ khóa:", value);
 
-    const trimmedValue = value.trim()
+    const trimmedValue = value.trim();
     if (!trimmedValue) {
-      return
+      return;
     }
-    navigate(`/tim-kiem?q=${trimmedValue}`)
-    setSuggestions([])
-  }
+    navigate(`/tim-kiem?q=${trimmedValue}`);
+    setSuggestions([]);
+  };
 
   const handleSearchChange = (e) => {
-    setSearchInput(e.target.value)
-  }
+    setSearchInput(e.target.value);
+  };
 
   useEffect(() => {
     const delayDebounce = setTimeout(async () => {
       if (!searchInput.trim()) {
-        setSuggestions([])
-        return
+        setSuggestions([]);
+        return;
       }
 
       try {
-        const response = await productApi.searchHeader(searchInput)
-        setSuggestions(response.data || [])
+        const response = await productApi.searchHeader(searchInput);
+        setSuggestions(response.data || []);
       } catch (error) {
-        console.error("Lỗi tìm kiếm:", error)
-        setSuggestions([])
+        console.error("Lỗi tìm kiếm:", error);
+        setSuggestions([]);
       }
-    }, 300)
+    }, 300);
 
-    return () => clearTimeout(delayDebounce)
-  }, [searchInput])
+    return () => clearTimeout(delayDebounce);
+  }, [searchInput]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setSuggestions([])
+        setSuggestions([]);
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const showLoginModal = () => {
-    setOpenModal(true)
-  }
+    setOpenModal(true);
+  };
 
   const handleLoginOk = () => {
-    setOpenModal(false)
-    navigate("/login")
-  }
+    setOpenModal(false);
+    navigate("/login");
+  };
 
   const handleCancel = () => {
-    setOpenModal(false)
-  }
+    setOpenModal(false);
+  };
 
   const handleLoginClick = () => {
-    navigate("/login")
-  }
+    navigate("/login");
+  };
 
   const onClick = (e) => {
-    setCurrent(e.key)
-    navigate(`/${e.key}`)
-  }
+    setCurrent(e.key);
+    navigate(`/${e.key}`);
+  };
 
   const fetchCartCount = async () => {
     try {
-      const res = await cartApi.getAll()
+      const res = await cartApi.getAll();
 
       if (res && res.data) {
-        let cartItems = []
+        let cartItems = [];
 
-        if (res.data.data && res.data.data.san_pham && Array.isArray(res.data.data.san_pham)) {
-          cartItems = res.data.data.san_pham
+        if (
+          res.data.data &&
+          res.data.data.san_pham &&
+          Array.isArray(res.data.data.san_pham)
+        ) {
+          cartItems = res.data.data.san_pham;
         } else if (res.data.san_pham && Array.isArray(res.data.san_pham)) {
-          cartItems = res.data.san_pham
+          cartItems = res.data.san_pham;
         } else if (Array.isArray(res.data)) {
-          cartItems = res.data
+          cartItems = res.data;
         } else if (res.data.data && Array.isArray(res.data.data)) {
-          cartItems = res.data.data
+          cartItems = res.data.data;
         }
 
-        const uniqueProductCount = cartItems.length
-        setCartCount(uniqueProductCount)
+        const uniqueProductCount = cartItems.length;
+        setCartCount(uniqueProductCount);
       } else {
-        setCartCount(0)
+        setCartCount(0);
       }
     } catch (err) {
-      setCartCount(0)
+      setCartCount(0);
     }
-  }
+  };
 
   useEffect(() => {
-    const loginStatus = localStorage.getItem("isLoggedIn") === "true"
-    setIsLoggedIn(loginStatus)
+    const loginStatus = localStorage.getItem("isLoggedIn") === "true";
+    setIsLoggedIn(loginStatus);
 
     if (loginStatus) {
-      fetchCartCount()
+      fetchCartCount();
     } else {
-      setCartCount(0)
+      setCartCount(0);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     const handleCartUpdated = () => {
-      const loginStatus = localStorage.getItem("isLoggedIn") === "true"
+      const loginStatus = localStorage.getItem("isLoggedIn") === "true";
 
       if (loginStatus) {
-        fetchCartCount()
+        fetchCartCount();
       } else {
-        setCartCount(0)
+        setCartCount(0);
       }
-    }
+    };
 
-    window.addEventListener("cart-updated", handleCartUpdated)
+    window.addEventListener("cart-updated", handleCartUpdated);
 
     return () => {
-      window.removeEventListener("cart-updated", handleCartUpdated)
-    }
-  }, [])
+      window.removeEventListener("cart-updated", handleCartUpdated);
+    };
+  }, []);
 
   return (
     <div className="enhanced-header-wrapper">
-      {/* Animated Background */}
-      <div className="header-background">
-        <div className="floating-shapes">
-          <div className="shape shape-1"></div>
-          <div className="shape shape-2"></div>
-          <div className="shape shape-3"></div>
-          <div className="shape shape-4"></div>
-        </div>
-        <div className="gradient-overlay"></div>
-      </div>
 
       <div className="container">
         <div className={`header-top row ${isScrolled ? "scrolled" : ""}`}>
@@ -259,7 +253,11 @@ function Header() {
               Miễn phí giao hàng từ hóa đơn {formatVND(500000)}
             </span>
             {!isLoggedIn && (
-              <Button type="link" className="button-login enhanced-login-btn" onClick={handleLoginClick}>
+              <Button
+                type="link"
+                className="button-login enhanced-login-btn"
+                onClick={handleLoginClick}
+              >
                 Đăng nhập
               </Button>
             )}
@@ -267,9 +265,22 @@ function Header() {
         </div>
 
         <div className={`row header-next ${isScrolled ? "scrolled" : ""}`}>
+          <div className="header-background">
+            <div className="floating-shapes">
+              <div className="shape shape-1"></div>
+              <div className="shape shape-2"></div>
+              <div className="shape shape-3"></div>
+              <div className="shape shape-4"></div>
+            </div>
+            <div className="gradient-overlay"></div>
+          </div>
           <div className="header-search col-lg-9">
             <div className="logo enhanced-logo">
-              <img src={logo || "/placeholder.svg"} alt="logo" style={{ width: "200px", height: "90px" }} />
+              <img
+                src={logo || "/placeholder.svg"}
+                alt="logo"
+                style={{ width: "200px", height: "90px" }}
+              />
               <div className="logo-glow"></div>
             </div>
             <div className="search enhanced-search">
@@ -285,13 +296,21 @@ function Header() {
                 {suggestions.length > 0 && (
                   <ul className="suggestions-list enhanced-suggestions">
                     {suggestions.map((item) => (
-                      <li key={item.id} className="suggestion-item" onClick={() => navigate(`/san-pham/${item.id}`)}>
+                      <li
+                        key={item.id}
+                        className="suggestion-item"
+                        onClick={() => navigate(`/san-pham/${item.id}`)}
+                      >
                         <img
-                          src={`${"http://127.0.0.1:8000"}/storage/${item.hinhAnh}`}
+                          src={`${"http://127.0.0.1:8000"}/storage/${
+                            item.hinhAnh
+                          }`}
                           alt={item.tenSanPham}
                           className="suggestion-img"
                         />
-                        <span className="suggestion-name">{item.tenSanPham}</span>
+                        <span className="suggestion-name">
+                          {item.tenSanPham}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -302,13 +321,18 @@ function Header() {
               <div className="cart enhanced-cart">
                 <Link to="/cart" className="cart-link">
                   <HiOutlineShoppingCart />
-                  {isLoggedIn && cartCount > 0 && <span className="cart-badge-enhanced">{cartCount}</span>}
+                  {isLoggedIn && cartCount > 0 && (
+                    <span className="cart-badge-enhanced">{cartCount}</span>
+                  )}
                 </Link>
               </div>
               <div className="header-user enhanced-user">
                 {isLoggedIn ? (
                   <Dropdown menu={{ items: userItems }}>
-                    <button onClick={(e) => e.preventDefault()} className="header__account-button enhanced-account-btn">
+                    <button
+                      onClick={(e) => e.preventDefault()}
+                      className="header__account-button enhanced-account-btn"
+                    >
                       <Space size={1}>
                         <i className="fa-solid fa-user"></i>
                         <p>Tài khoản</p>
@@ -318,7 +342,10 @@ function Header() {
                   </Dropdown>
                 ) : (
                   <>
-                    <button onClick={showLoginModal} className="header__account-button enhanced-account-btn">
+                    <button
+                      onClick={showLoginModal}
+                      className="header__account-button enhanced-account-btn"
+                    >
                       <Space size={1}>
                         <i className="fa-solid fa-user"></i>
                         <p>Tài khoản</p>
@@ -360,8 +387,9 @@ function Header() {
                         }}
                       />
                       <p>
-                        Có vẻ như bạn chưa đăng nhập. Hãy đăng nhập ngay để sử dụng đầy đủ các tiện ích và dịch vụ mà
-                        chúng tôi cung cấp nhé!
+                        Có vẻ như bạn chưa đăng nhập. Hãy đăng nhập ngay để sử
+                        dụng đầy đủ các tiện ích và dịch vụ mà chúng tôi cung
+                        cấp nhé!
                       </p>
                     </Modal>
                   </>
@@ -371,7 +399,11 @@ function Header() {
           </div>
         </div>
       </div>
-      <div className={`header-menu-wrapper container ${isScrolled ? "scrolled" : ""}`}>
+      <div
+        className={`header-menu-wrapper container ${
+          isScrolled ? "scrolled" : ""
+        }`}
+      >
         <Menu
           onClick={onClick}
           selectedKeys={[current]}
@@ -381,7 +413,7 @@ function Header() {
         />
       </div>
     </div>
-  )
+  );
 }
 
-export default Header
+export default Header;
