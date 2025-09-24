@@ -515,24 +515,6 @@
               justify-content: space-between;
             }
 
-            .product-title {
-              font-size: 15px;
-              font-weight: 600;
-              color: #333;
-              margin-top: 8px;
-              margin-bottom: 8px;
-              height: 48px; /* tăng chiều cao để chứa 2 dòng */
-              line-height: 1.4;
-              overflow: hidden;
-              display: -webkit-box;
-              -webkit-line-clamp: 2; /* chỉ hiển thị 2 dòng */
-              line-clamp: 2; /* thuộc tính chuẩn */
-              -webkit-box-orient: vertical;
-              word-wrap: break-word;
-              word-break: break-word;
-              text-align: left;
-            }
-
             .product-info {
               margin-top: 8px;
 
@@ -581,6 +563,23 @@
       }
     }
   }
+}
+
+.product-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 8px auto;
+  height: 48px; /* tăng chiều cao để chứa 2 dòng */
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* chỉ hiển thị 2 dòng */
+  line-clamp: 2; /* thuộc tính chuẩn */
+  -webkit-box-orient: vertical;
+  word-wrap: break-word;
+  word-break: break-word;
+  text-align: center;
 }
 
 .react-multi-carousel-list {

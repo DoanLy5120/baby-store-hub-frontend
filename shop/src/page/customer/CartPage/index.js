@@ -8,37 +8,45 @@ import "./CartPage.scss";
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
+  const [cartSummary, setCartSummary] = useState({
+    tam_tinh: 0,
+    phi_van_chuyen: 20000,
+    tong_thanh_toan: 0,
+  });
 
   const navigate = useNavigate();
   const handleGoToCheckout = () => {
-    navigate("/buying");
+    navigate("/buying", {
+      state: {
+        cartItems,
+        cartSummary,
+      },
+    });
   };
 
-  // Utility function để xử lý response data structure
   const extractCartData = (response) => {
-    if (!response?.data) return [];
-    
-    // Kiểm tra các cấu trúc response khác nhau
-    if (response.data.data?.san_pham && Array.isArray(response.data.data.san_pham)) {
+    if (response?.data?.data?.san_pham) {
       return response.data.data.san_pham;
     }
-    if (response.data.san_pham && Array.isArray(response.data.san_pham)) {
-      return response.data.san_pham;
-    }
-    if (Array.isArray(response.data)) {
-      return response.data;
-    }
-    
     return [];
   };
 
-  // Utility function để fetch và cập nhật cart data
   const refreshCartData = async () => {
     try {
       const fetchRes = await cartApi.getAll();
-      const cartItems = extractCartData(fetchRes);
-      const mappedCart = mapCartFromAPI(cartItems);
+      const san_pham = extractCartData(fetchRes);
+      const mappedCart = mapCartFromAPI(san_pham);
       setCartItems(mappedCart);
+
+      // cập nhật cartSummary từ BE luôn
+      if (fetchRes?.data?.data?.tam_tinh) {
+        setCartSummary((prev) => ({
+          ...prev,
+          tam_tinh: fetchRes.data.data.tam_tinh,
+          tong_thanh_toan: fetchRes.data.data.tam_tinh + prev.phi_van_chuyen,
+        }));
+      }
+
       return mappedCart;
     } catch (error) {
       console.error("Failed to refresh cart data:", error);
@@ -47,64 +55,69 @@ const CartPage = () => {
     }
   };
 
-  // Tối ưu hóa mapCartFromAPI dựa trên cấu trúc dữ liệu thực tế
+  const refreshCartSummary = async (extraData = {}) => {
+    try {
+      const res = await cartApi.calculateTotal(extraData);
+      if (res?.data?.success) {
+        setCartSummary(res.data.data);
+      }
+    } catch (error) {
+      console.error("Failed to calculate total:", error);
+    }
+  };
+
   const mapCartFromAPI = (data) => {
     return (data || []).map((item) => ({
       id: item.id,
-      name: item.ten || "No name",
-      image: item.hinhAnh || "",
-      desc: item.moTa || "",
-      price: item.gia || 0,
-      priceWithVAT: item.giaSauVAT || item.gia_cuoi || 0,
+      name: item.ten,
+      image: item.hinhAnh
+        ? `http://127.0.0.1:8000/storage/${item.hinhAnh}`
+        : "",
+      desc: item.moTa,
+      price: item.gia_cuoi, 
+      original: item.gia,
       discount: item.giamGia,
-      isHot: item.noiBat || false,
-      quantity: item.soLuong || 1,
-      VAT: item.VAT || 0,
-      thanh_tien: item.thanh_tien || 0,
-      tonKho: item.tonKho || 0
+      isHot: item.noiBat,
+      quantity: item.soLuong,
+      VAT: item.VAT,
+      thanh_tien: item.thanh_tien,
+      tonKho: item.tonKho,
+      isFlashSale: item.flash_sale > 0, // bổ sung nếu muốn dùng ở UI
     }));
   };
 
   const updateQuantity = async (id, newQuantity) => {
-    
-    // Validation: kiểm tra số lượng hợp lệ
     if (newQuantity < 1) {
       console.warn("Invalid quantity:", newQuantity);
       return;
     }
 
     const originalItems = cartItems;
-    const currentItem = cartItems.find(item => item.id === id);
-    
+
     try {
-      // Cập nhật ngay lập tức trong UI (optimistic update)
-      setCartItems(prevItems => {
-        const updatedItems = prevItems.map(item => 
+      setCartItems((prevItems) => {
+        const updatedItems = prevItems.map((item) =>
           item.id === id ? { ...item, quantity: newQuantity } : item
         );
         return updatedItems;
       });
-      
-      const res = await cartApi.update(id, { 
+
+      const res = await cartApi.update(id, {
         san_pham_id: id,
-        so_luong: newQuantity 
+        so_luong: newQuantity,
       });
-      
-      // Dispatch event để cập nhật header
+
       setTimeout(() => {
         window.dispatchEvent(new Event("cart-updated"));
       }, 100);
-      
-      // Kiểm tra response status thay vì res.success
+
       if (res.status >= 200 && res.status < 300) {
         console.log("API update successful, keeping optimistic update");
       } else {
-        console.log("API update failed, reverting to original state");
-        setCartItems(originalItems); // Khôi phục trạng thái ban đầu
-        await refreshCartData(); // Sau đó fetch dữ liệu mới
+        setCartItems(originalItems);
+        await refreshCartData();
       }
     } catch (error) {
-      // Khôi phục trạng thái ban đầu trước khi fetch
       setCartItems(originalItems);
       await refreshCartData();
     }
@@ -112,33 +125,27 @@ const CartPage = () => {
 
   const removeItem = async (id) => {
     const originalItems = cartItems;
-    const itemToRemove = cartItems.find(item => item.id === id);
-    
+    const itemToRemove = cartItems.find((item) => item.id === id);
+
     if (!itemToRemove) {
       return;
     }
 
     try {
-      // Xóa ngay lập tức khỏi UI (optimistic update)
-      setCartItems(prevItems => prevItems.filter(item => item.id !== id));
-      
+      setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
+
       const res = await cartApi.delete(id);
-      
-      // Dispatch event để cập nhật header
       setTimeout(() => {
         window.dispatchEvent(new Event("cart-updated"));
       }, 100);
-      
-      // Kiểm tra response status thay vì res.success
+
       if (res.status >= 200 && res.status < 300) {
         console.log("API delete successful, keeping optimistic update");
       } else {
-        console.log("API delete failed, reverting to original state");
-        setCartItems(originalItems); // Khôi phục trạng thái ban đầu
-        await refreshCartData(); // Sau đó fetch dữ liệu mới
+        setCartItems(originalItems);
+        await refreshCartData();
       }
     } catch (error) {
-      // Khôi phục trạng thái ban đầu trước khi fetch
       setCartItems(originalItems);
       await refreshCartData();
     }
@@ -155,26 +162,18 @@ const CartPage = () => {
   //   }
   // };
 
-  // Hàm lấy giá đã gồm VAT từ cart (ưu tiên lấy priceWithVAT nếu có)
-  const getFinalPrice = (item) => {
-    if (typeof item.priceWithVAT !== "undefined") return item.priceWithVAT;
-    const vat = item.VAT || item.vat || 0;
-    let priceWithVAT = item.price * (1 + vat / 100);
-    if (!item.isHot && item.discount) {
-      priceWithVAT = priceWithVAT * (1 - item.discount);
-    }
-    return priceWithVAT;
-  };
-
   const calculateSubtotal = () => {
     return cartItems.reduce(
-      (total, item) => total + getFinalPrice(item) * item.quantity,
+      (total, item) => total + item.price * item.quantity,
       0
     );
   };
 
   useEffect(() => {
-    refreshCartData();
+    (async () => {
+      await refreshCartData();
+      await refreshCartSummary();
+    })();
   }, []);
 
   const subtotal = calculateSubtotal();
@@ -193,15 +192,18 @@ const CartPage = () => {
             </div>
 
             <div className="product-list">
-              {cartItems.map((item, index) => (
+              {cartItems.map((item) => (
                 <div key={item.id} className="product-card">
                   <div className="product-card-content">
                     <div className="product-image-container">
                       {item.isHot && (
                         <div className="hot-badge">Hot & Trending</div>
                       )}
+                      {item.isFlashSale && (
+                        <div className="flash-sale-badge">⚡ Flash Sale</div>
+                      )}
                       <Image
-                        src={`http://127.0.0.1:8000/storage/${item.image}`}
+                        src={item.image}
                         alt={item.name}
                         width={150}
                         height={150}
@@ -224,31 +226,19 @@ const CartPage = () => {
                           }}
                         >
                           <span className="current-price">
-                            {formatVND(getFinalPrice(item))}
+                            {formatVND(item.price)}
                           </span>
-                          {!item.isHot &&
-                            item.price !== getFinalPrice(item) && (
+                          {!item.isHot &&(
                               <>
                                 <span
                                   className="original-price"
                                   style={{ marginLeft: 8 }}
                                 >
-                                  {formatVND(item.price)}
+                                  {formatVND(item.original)}
                                 </span>
-                                {item.discount && (
-                                  <span
-                                    className="discount-badge"
-                                    style={{ marginLeft: 8 }}
-                                  >
-                                    -{Math.round((item.discount || 0) * 100)}%
-                                  </span>
-                                )}
                               </>
                             )}
                         </div>
-                        {item.isFlashSale && (
-                          <div className="flash-sale-badge">⚡ Flash Sale</div>
-                        )}
                       </div>
 
                       <div className="quantity-section">
@@ -301,19 +291,21 @@ const CartPage = () => {
 
               <div className="summary-row">
                 <span>Tổng giá sản phẩm</span>
-                <span>{formatVND(subtotal)}</span>
+                <span>{formatVND(cartSummary.tam_tinh)}</span>
               </div>
 
               <div className="summary-row">
                 <span>Phí vận chuyển</span>
-                <span>{formatVND(20000)}</span>
+                <span>{formatVND(cartSummary.phi_van_chuyen)}</span>
               </div>
 
               <Divider />
 
               <div className="summary-row total-row">
                 <span>Tạm tính</span>
-                <span className="total-price">{formatVND(total)}</span>
+                <span className="total-price">
+                  {formatVND(cartSummary.tong_thanh_toan)}
+                </span>
               </div>
             </div>
 
