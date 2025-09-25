@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import {
   Button,
   Card,
@@ -133,53 +132,6 @@ function BuyPage() {
     });
   };
 
-  // Lấy danh sách tỉnh/thành
-  // useEffect(() => {
-  //   axios
-  //     .get("https://provinces.open-api.vn/api/p/")
-  //     .then((res) => {
-  //       const opts = res.data.map((p) => ({
-  //         label: p.name,
-  //         value: p.code,
-  //       }));
-  //       console.log("Province options:", opts); // ✅ kiểm tra dữ liệu ở console
-  //       setProvinceOptions(opts);
-  //     })
-  //     .catch((err) => console.error("Lỗi load provinces:", err));
-  // }, []);
-
-  // // Lấy danh sách quận/huyện khi chọn tỉnh/thành
-  // const handleProvinceChange = (provinceCode) => {
-  //   form.setFieldsValue({ district_id: null, ward_code: null });
-  //   setDistrictOptions([]);
-  //   setWardOptions([]);
-  //   axios
-  //     .get(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
-  //     .then((res) => {
-  //       setDistrictOptions(
-  //         res.data.districts.map((d) => ({
-  //           label: d.name,
-  //           value: d.code,
-  //         }))
-  //       );
-  //     });
-  // };
-
-  // // Lấy danh sách phường/xã khi chọn quận/huyện
-  // const handleDistrictChange = (districtCode) => {
-  //   form.setFieldsValue({ ward_code: null });
-  //   setWardOptions([]);
-  //   axios
-  //     .get(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
-  //     .then((res) => {
-  //       setWardOptions(
-  //         res.data.wards.map((w) => ({
-  //           label: w.name,
-  //           value: w.code,
-  //         }))
-  //       );
-  //     });
-  // };
 
   // thêm hàm này vào trong component BuyPage
   const handleCheckout = async () => {
@@ -208,7 +160,7 @@ function BuyPage() {
       }
 
       // COD thì xử lý bình thường
-      navigate("/orders");
+      navigate("/orderSuccess");
     } catch (error) {
       console.error("❌ Lỗi checkout:", error.response?.data || error);
       api.error({
