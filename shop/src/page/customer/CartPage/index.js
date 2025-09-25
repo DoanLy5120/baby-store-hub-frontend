@@ -10,7 +10,6 @@ const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [cartSummary, setCartSummary] = useState({
     tam_tinh: 0,
-    phi_van_chuyen: 20000,
     tong_thanh_toan: 0,
   });
 
@@ -43,7 +42,7 @@ const CartPage = () => {
         setCartSummary((prev) => ({
           ...prev,
           tam_tinh: fetchRes.data.data.tam_tinh,
-          tong_thanh_toan: fetchRes.data.data.tam_tinh + prev.phi_van_chuyen,
+          tong_thanh_toan: fetchRes.data.data.tam_tinh ,
         }));
       }
 
@@ -175,10 +174,7 @@ const CartPage = () => {
       await refreshCartSummary();
     })();
   }, []);
-
-  const subtotal = calculateSubtotal();
-  const shipping = 20000; // Chưa tính
-  const total = subtotal + shipping;
+;
 
   return (
     <div className="shopping-cart">
@@ -292,11 +288,6 @@ const CartPage = () => {
               <div className="summary-row">
                 <span>Tổng giá sản phẩm</span>
                 <span>{formatVND(cartSummary.tam_tinh)}</span>
-              </div>
-
-              <div className="summary-row">
-                <span>Phí vận chuyển</span>
-                <span>{formatVND(cartSummary.phi_van_chuyen)}</span>
               </div>
 
               <Divider />
