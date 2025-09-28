@@ -104,7 +104,13 @@ const HomePage = () => {
   };
 
   const handleBuyNow = () => {
-    navigate("/buying");
+    // truyền product hiện tại và quantity qua state của react-router
+    navigate("/buying", {
+      state: {
+        product: selectedProduct,
+        quantity: quantity,
+      },
+    });
     setIsModalVisible(false);
   };
 
