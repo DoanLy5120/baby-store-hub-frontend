@@ -17,6 +17,7 @@ import { FaList, FaShoppingCart } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import categoryApi from "../../../api/categoryApi";
+import cartApi from "../../../api/cartApi";
 import { formatVND } from "../../../utils/formatter";
 import Abbott from "../../../assets/img/homePage/Abbott.png";
 import Aptamil from "../../../assets/img/homePage/Aptamil.jpg";
@@ -77,7 +78,7 @@ function CategoryDetailPage() {
     setIsModalVisible(true);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (quantity > selectedProduct.soLuongTon) {
       api.warning({
         message: `Vượt quá giới hạn tồn kho`,
@@ -86,53 +87,35 @@ function CategoryDetailPage() {
       return;
     }
 
-    // Lấy giỏ hàng hiện tại từ localStorage
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    try {
+      const res = await cartApi.add({
+        san_pham_id: selectedProduct.id,
+        so_luong: quantity,
+      });
 
-    // Kiểm tra sản phẩm đã tồn tại chưa
-    const existingIndex = cart.findIndex(
-      (item) => item.id === selectedProduct.id
-    );
+      if (res?.message || res?.data) {
+        window.dispatchEvent(new Event("cart-updated"));
 
-    if (existingIndex !== -1) {
-      // Nếu đã tồn tại, tăng số lượng
-      cart[existingIndex].quantity += quantity;
-    } else {
-      // Nếu chưa, thêm mới
-      let priceWithVAT = selectedProduct.giaBan;
-      if (typeof selectedProduct.VAT !== "undefined") {
-        priceWithVAT = selectedProduct.giaBan * (1 + selectedProduct.VAT / 100);
+        api.success({
+          message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
+          placement: "topRight",
+        });
+
+        setIsModalVisible(false);
+      } else {
+        api.error({
+          message: "Không thể thêm sản phẩm vào giỏ",
+          description: res?.message || "Lỗi không xác định",
+          placement: "topRight",
+        });
       }
-      // Nếu là sản phẩm sale có giá sau giảm thì lấy giá đó
-      if (typeof selectedProduct.giaSauGiam !== "undefined") {
-        priceWithVAT = selectedProduct.giaSauGiam;
-      }
-      cart.push({
-        id: selectedProduct.id,
-        name: selectedProduct.tenSanPham,
-        desc: selectedProduct.moTa,
-        price: selectedProduct.giaBan,
-        priceWithVAT: priceWithVAT,
-        image: selectedProduct.hinhAnh,
-        quantity: quantity,
-        stock: selectedProduct.soLuongTon,
-        isHot: selectedProduct.is_noi_bat,
-        VAT: selectedProduct.VAT,
-        discountPercent: selectedProduct.discountPercent || 0,
+    } catch (error) {
+      api.error({
+        message: "Không thể thêm sản phẩm vào giỏ",
+        description: error.response?.data?.message || error.message,
+        placement: "topRight",
       });
     }
-
-    // Cập nhật lại localStorage
-    localStorage.setItem("cart", JSON.stringify(cart));
-    // Trigger custom event để header cập nhật cartCount ngay lập tức
-    window.dispatchEvent(new Event("cart-updated"));
-
-    api.success({
-      message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
-      placement: "topRight",
-    });
-
-    setIsModalVisible(false);
   };
 
   const handleBuyNow = () => {
@@ -216,7 +199,7 @@ function CategoryDetailPage() {
   const brandChunks = chunkArray(brandData, 6); // mỗi slide 6 logo
 
   return (
-    <div className="category-page">
+    <div className="category-detail-page">
     {contextHolder}
       <Layout>
         {/* Sidebar */}

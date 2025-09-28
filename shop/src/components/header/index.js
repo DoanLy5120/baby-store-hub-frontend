@@ -6,7 +6,7 @@ import logo from "../../assets/img/header/logo.png";
 import { Button, Menu } from "antd";
 import { formatVND } from "../../utils/formatter";
 import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { AiFillHome } from "react-icons/ai";
 import { FaBoxOpen } from "react-icons/fa6";
@@ -27,18 +27,8 @@ const navbarItems = [
   },
   {
     label: "ĐƠN MUA",
-    key: "product",
+    key: "orderManagement",
     icon: <FaBoxOpen />,
-    children: [
-      {
-        label: "ITEM1",
-        key: "item1",
-      },
-      {
-        label: "ITEM2",
-        key: "item2",
-      },
-    ],
   },
   {
     label: "THÔNG BÁO",
@@ -65,6 +55,12 @@ function Header() {
   const [openModal, setOpenModal] = useState(false);
 
   const searchRef = useRef(null);
+  const location = useLocation();
+  useEffect(() => {
+    // lấy path, bỏ dấu "/" ở đầu
+    const path = location.pathname.replace("/", "");
+    setCurrent(path || "");
+  }, [location]);
 
   // Enhanced scroll effect
   useEffect(() => {
@@ -229,7 +225,6 @@ function Header() {
 
   return (
     <div className="enhanced-header-wrapper">
-
       <div className="container">
         <div className={`header-top row ${isScrolled ? "scrolled" : ""}`}>
           <span className="header-hotline">

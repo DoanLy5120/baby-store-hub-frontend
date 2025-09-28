@@ -1,4 +1,15 @@
-import { Button, Card, Space, Typography, Row, Col, Divider } from "antd";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  Button,
+  Card,
+  Space,
+  Typography,
+  Row,
+  Col,
+  Divider,
+  Spin,
+} from "antd";
 import {
   CheckCircleOutlined,
   HomeOutlined,
@@ -7,21 +18,77 @@ import {
   GiftOutlined,
   StarOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import orderApi from "../../../api/orderApi"; // chỉnh path nếu khác
 import "./OrderSuccess.scss";
 
 const { Title, Text, Paragraph } = Typography;
 
+// Map trạng thái sang chuỗi người dùng (tuỳ bạn mở rộng)
+const STATUS_LABEL = {
+  CHO_XU_LY: "Chờ xử lý",
+  CHO_LAY_HANG: "Chờ lấy hàng",
+  DANG_GIAO: "Đang giao",
+  THANH_CONG: "Thành công",
+  DA_THANH_TOAN: "Đã thanh toán",
+  DA_HUY: "Đã hủy",
+};
+
 const OrderSuccess = () => {
   const navigate = useNavigate();
-  const handleGoHome = () => {
-    navigate("/");
+  const location = useLocation();
+
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Lấy orderId từ query string: /orderSuccess?orderId=<id>
+  const searchParams = new URLSearchParams(location.search);
+  const orderId = searchParams.get("orderId");
+
+  useEffect(() => {
+    if (!orderId) {
+      setLoading(false);
+      setError("Không tìm thấy orderId trong URL");
+      return;
+    }
+
+    const fetchOrder = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await orderApi.showById(orderId);
+        // BE trả về object ở res.data
+        setOrder(res.data);
+      } catch (err) {
+        console.error("Lỗi khi gọi showById:", err);
+        setError("Không lấy được thông tin đơn hàng.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId]);
+
+  const handleGoHome = () => navigate("/");
+  const handleViewOrder = () => {
+    // navigate đến trang chi tiết (tuỳ router FE của bạn)
+     navigate("/orderManagement");
   };
 
-  const handleViewProducts = () => {
-    // Navigate to products page
-    console.log("Navigating to products");
-  };
+  const formatPrice = (v) =>
+    new Intl.NumberFormat("vi-VN").format(Number(v || 0)) + " đ";
+
+  // Điều kiện thay Title khi gateway === 'cod'
+  const isCod = !!order && String(order.gateway || "").toLowerCase() === "cod";
+
+  if (loading) {
+    return (
+      <div className="order-loading">
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div className="order-success-container">
@@ -38,7 +105,6 @@ const OrderSuccess = () => {
         <Row justify="center">
           <Col xs={22} sm={20} md={16} lg={12} xl={10}>
             <Card className="success-card" bordered={false}>
-              {/* Success Icon */}
               <div className="success-icon-container">
                 <div className="success-icon floating-animation">
                   <GiftOutlined className="gift-icon" />
@@ -46,11 +112,22 @@ const OrderSuccess = () => {
                 </div>
               </div>
 
-              {/* Success Message */}
+              {/* Title thay đổi theo gateway */}
               <div className="success-message">
                 <Title level={2} className="success-title gradient-text">
-                  Đặt hàng thành công! 🎉<br />
-                  BaByHub xin chân thành cảm ơn!
+                  {isCod ? (
+                    <>
+                      Đơn hàng đang chờ xác nhận! 🕒
+                      <br />
+                      Vui lòng chờ shop xác nhận nhé 💖
+                    </>
+                  ) : (
+                    <>
+                      Đặt hàng thành công! 🎉
+                      <br />
+                      BaByHub xin chân thành cảm ơn!
+                    </>
+                  )}
                 </Title>
 
                 <div className="cute-decoration">
@@ -61,43 +138,53 @@ const OrderSuccess = () => {
 
                 <Paragraph className="success-description">
                   <Text>
-                    Cảm ơn mẹ đã tin tưởng và đặt hàng tại shop BaByHub! 💕 Đơn hàng của
-                    mẹ đang được chuẩn bị với tất cả tình yêu thương. Chúng mình
-                    sẽ giao hàng nhanh nhất để bé có thể sử dụng sớm nhé! 👶✨
+                    {isCod
+                      ? "Cảm ơn mẹ! Đơn hàng của bạn đã được ghi nhận, shop sẽ xác nhận và giao hàng sớm."
+                      : "Cảm ơn mẹ đã tin tưởng và đặt hàng tại shop BaByHub! Đơn hàng đang được chuẩn bị."}
                   </Text>
                 </Paragraph>
 
+                {/* Thông tin đơn dựa trên showById (BE trả) */}
                 <div className="order-info">
                   <div className="info-item">
                     <Text strong>📦 Mã đơn hàng: </Text>
-                    <Text code>#MB2024001</Text>
+                    <Text code>{order?.ma_don_hang ?? order?.id}</Text>
                   </div>
+
                   <div className="info-item">
-                    <Text strong>🚚 Thời gian giao hàng: </Text>
-                    <Text>2-3 ngày làm việc</Text>
+                    <Text strong>📋 Trạng thái: </Text>
+                    <Text>
+                      {STATUS_LABEL[order?.status] ?? order?.status ?? "—"}
+                    </Text>
                   </div>
+
                   <div className="info-item">
-                    <Text strong>📱 Thông báo: </Text>
-                    <Text>Đơn hàng sẽ được thông báo qua email</Text>
+                    <Text strong>💰 Tổng tiền: </Text>
+                    <Text>{formatPrice(order?.total)}</Text>
+                  </div>
+
+                  <div className="info-item">
+                    <Text strong>✅ Thanh toán: </Text>
+                    <Text>{order?.paid ? "Đã thanh toán" : "Chưa thanh toán"}</Text>
+                  </div>
+
+                  <div className="info-item">
+                    <Text strong>🏦 Cổng thanh toán: </Text>
+                    <Text>{(order?.gateway ?? "—").toString().toUpperCase()}</Text>
                   </div>
                 </div>
               </div>
 
               <Divider className="custom-divider" />
 
-              {/* Action Buttons */}
+              {/* Actions */}
               <div className="action-buttons">
-                <Space
-                  size="large"
-                  direction="vertical"
-                  style={{ width: "100%" }}
-                >
+                <Space size="large" direction="vertical" style={{ width: "100%" }}>
                   <Button
                     type="primary"
                     size="large"
                     icon={<HomeOutlined />}
                     onClick={handleGoHome}
-                    className="primary-button"
                     block
                   >
                     Quay về trang chủ
@@ -106,21 +193,19 @@ const OrderSuccess = () => {
                   <Button
                     size="large"
                     icon={<ShoppingOutlined />}
-                    onClick={handleViewProducts}
-                    className="secondary-button"
+                    onClick={handleViewOrder}
                     block
                   >
-                    Xem đơn hàng
+                    Xem chi tiết đơn hàng
                   </Button>
                 </Space>
               </div>
 
-              {/* Thank You Message */}
               <div className="thank-you-section">
                 <div className="baby-icons">🍼 👶 🧸 🎀 🌟</div>
                 <Text className="thank-you-text">
-                  Cảm ơn mẹ đã lựa chọn những sản phẩm tốt nhất cho bé! Chúc mẹ
-                  và bé luôn khỏe mạnh, hạnh phúc! 💖
+                  Cảm ơn mẹ đã lựa chọn những sản phẩm tốt nhất cho bé! Chúc mẹ và
+                  bé luôn khỏe mạnh, hạnh phúc! 💖
                 </Text>
               </div>
             </Card>
@@ -128,7 +213,6 @@ const OrderSuccess = () => {
         </Row>
       </div>
 
-      {/* Footer */}
       <div className="footer">
         <div className="footer-text">
           <Text type="secondary">
