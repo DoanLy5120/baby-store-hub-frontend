@@ -1,3 +1,162 @@
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px rgba(135, 206, 235, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(135, 206, 235, 0.6),
+      0 0 30px rgba(255, 182, 193, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(135, 206, 235, 0.3);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes shimmerTimer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@mixin skeleton-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@mixin card-hover {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  &:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(135, 206, 235, 0.4),
+      0 5px 15px rgba(255, 182, 193, 0.2);
+  }
+}
+
+@mixin gradient-bg($color1, $color2) {
+  background: linear-gradient(135deg, $color1 0%, $color2 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
 .category-detail-page {
   min-height: 100vh;
   background: rgb(244, 247, 255);
@@ -6,67 +165,98 @@
   // Sidebar
   .sidebar {
     width: 240px;
-    margin-top: 120px;
-    background: #fff;
-    border-right: 1px solid #e8e8e8;
+    margin-top: 150px;
+    background: #ffffff;
+    border-right: 2px solid #87ceeb;
     flex-shrink: 0;
+    border-radius: 0 10px 10px 0;
+    box-shadow: 0 2px 8px rgba(135, 206, 235, 0.2);
+
+    animation: fadeInLeft 1s ease-out 0.2s both;
 
     .sidebar-header {
       display: flex;
       align-items: center;
-      padding: 14px 16px;
-      font-size: 20px;
-      margin-top: 10px;
-      font-weight: 600;
-      border-bottom: 1px solid #f0f0f0;
-      color: #fff;
-      background-color: var(--primary);
+      padding: 12px 16px;
+      font-size: 18px;
+      margin-top: 5px;
+      font-weight: 700;
+      border-bottom: 2px solid #b0e0e6;
+      color: #ffffff;
+      @include gradient-bg(#87ceeb, #4682b4);
+      border-radius: 0 10px 0 0;
 
       svg {
-        font-size: 22px;
+        font-size: 20px;
         margin-right: 8px;
         vertical-align: middle;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
       }
 
       h3 {
         margin: 0;
         padding: 0;
-        font-size: 18px;
+        font-size: 16px;
         line-height: 1;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       }
     }
 
     .sidebar-menu {
-      padding: 2px;
+      padding: 6px;
       font-size: 16px;
 
       .ant-menu-item {
-        height: 50px;
-        line-height: 50px;
-        padding: 0 20px;
-        margin: 0;
-        border-radius: 0;
+        height: 45px;
+        line-height: 45px;
+        padding: 0 18px;
+        margin: 2px 0;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+
+        &:nth-child(1) {
+          animation: fadeInRight 0.6s ease-out 0.4s both;
+        }
+        &:nth-child(2) {
+          animation: fadeInRight 0.6s ease-out 0.5s both;
+        }
+        &:nth-child(3) {
+          animation: fadeInRight 0.6s ease-out 0.6s both;
+        }
+        &:nth-child(4) {
+          animation: fadeInRight 0.6s ease-out 0.7s both;
+        }
+        &:nth-child(5) {
+          animation: fadeInRight 0.6s ease-out 0.8s both;
+        }
+        &:nth-child(6) {
+          animation: fadeInRight 0.6s ease-out 0.9s both;
+        }
 
         &:hover {
-          background-color: var(--primary);
-          color: #fff;
-          border-radius: 5px;
+          @include gradient-bg(#ffb6c1, #ff69b4);
+          color: #ffffff;
+          transform: translateX(8px) scale(1.02);
+          box-shadow: 0 6px 20px rgba(255, 182, 193, 0.5);
+          animation: glow 2s ease-in-out infinite alternate;
         }
 
         .ant-menu-item-icon {
           font-size: 16px;
-          margin-right: 12px;
+          margin-right: 10px;
         }
 
         .ant-menu-title-content {
           font-size: 14px;
+          font-weight: 500;
         }
       }
 
       .ant-menu-item-selected {
-        background-color: var(--primary);
-        color: #fff;
-        border-radius: 5px;
+        @include gradient-bg(#87ceeb, #4682b4);
+        color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(135, 206, 235, 0.4);
 
         &::after {
           display: none;
@@ -274,6 +464,40 @@
           }
         }
       }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .homepage {
+    .sidebar {
+      width: 200px;
+    }
+
+    .main-layout {
+      .content-wrapper {
+        max-width: 100%;
+        padding: 0 15px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .homepage {
+    flex-direction: column;
+
+    .sidebar {
+      width: 100%;
+      margin-top: 0;
+      border-radius: 0;
+      animation: fadeInDown 0.6s ease-out;
+    }
+
+    .main-layout {
+      margin-top: 0;
+      animation: fadeInUp 0.8s ease-out 0.2s both;
     }
   }
 }
