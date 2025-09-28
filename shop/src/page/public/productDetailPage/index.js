@@ -94,7 +94,6 @@ const ProductDetailPage = () => {
           message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
           placement: "topRight",
         });
-        
       } else {
         api.error({
           message: "Không thể thêm sản phẩm vào giỏ",
@@ -112,7 +111,13 @@ const ProductDetailPage = () => {
   };
 
   const handleBuyNow = () => {
-    navigate("/buying");
+    // truyền product hiện tại và quantity qua state của react-router
+    navigate("/buying", {
+      state: {
+        product: product,
+        quantity: quantity,
+      },
+    });
   };
 
   if (loading) {

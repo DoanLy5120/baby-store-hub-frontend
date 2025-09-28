@@ -119,7 +119,13 @@ function CategoryDetailPage() {
   };
 
   const handleBuyNow = () => {
-    navigate("/buying")
+    // truyền product hiện tại và quantity qua state của react-router
+    navigate("/buying", {
+      state: {
+        product: selectedProduct,
+        quantity: quantity,
+      },
+    });
     setIsModalVisible(false);
   };
 
@@ -200,7 +206,7 @@ function CategoryDetailPage() {
 
   return (
     <div className="category-detail-page">
-    {contextHolder}
+      {contextHolder}
       <Layout>
         {/* Sidebar */}
         <div className="sidebar">
@@ -251,13 +257,7 @@ function CategoryDetailPage() {
                     const fakeAgeRange = index % 3 === 0 ? "3-6 tuổi" : null;
 
                     return (
-                      <Col
-                        key={product.id}
-                        xs={24} 
-                        sm={12} 
-                        md={8} 
-                        lg={6} 
-                      >
+                      <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
                         <Card
                           hoverable
                           className="product-card"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Button,
   Card,
@@ -24,6 +24,7 @@ const { Title, Text } = Typography;
 
 function BuyPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [cartSummary, setCartSummary] = useState({
     tam_tinh: 0,
@@ -51,13 +52,19 @@ function BuyPage() {
   const shippingFee = cartSummary.phi_van_chuyen;
   const finalTotal = cartSummary.tong_thanh_toan;
 
+  const buyState = location.state || {};
+  const buyProduct = buyState.product || null;
+  const buyQuantity = buyState.quantity ?? 1;
+  const isBuyNow = Boolean(buyProduct);
+
   // Lấy dữ liệu giỏ hàng từ API khi component được tải
   useEffect(() => {
+    if (isBuyNow) return; // skip nếu là mua ngay
+
     const fetchCartFromApi = async () => {
       try {
         const res = await cartApi.getAll();
         const cartData = res?.data?.data;
-
         if (!cartData) return;
 
         const mappedProducts = (cartData.san_pham || []).map((item) => ({
@@ -90,7 +97,37 @@ function BuyPage() {
     };
 
     fetchCartFromApi();
-  }, []);
+  }, [isBuyNow]);
+
+  // Nếu là Mua ngay, khởi tạo products & summary từ product được truyền
+  useEffect(() => {
+    if (!isBuyNow) return;
+
+    const p = buyProduct;
+    const price = p.gia_cuoi ?? p.giaBan ?? 0; // dùng giá hiển thị (tùy cấu trúc product)
+    const mapped = {
+      key: p.id,
+      id: p.id,
+      name: p.tenSanPham ?? p.ten ?? p.name,
+      image: p.hinhAnh
+        ? `http://127.0.0.1:8000/storage/${p.hinhAnh}`
+        : "/placeholder.svg",
+      price: price,
+      quantity: buyQuantity,
+      total: price * buyQuantity,
+      soLuongTon: p.soLuongTon ?? p.tonKho ?? 0,
+    };
+
+    setProducts([mapped]);
+
+    const tamTinh = mapped.total;
+    const phiVC = 20000;
+    setCartSummary({
+      tam_tinh: tamTinh,
+      phi_van_chuyen: phiVC,
+      tong_thanh_toan: tamTinh + phiVC,
+    });
+  }, [isBuyNow, buyProduct, buyQuantity]);
 
   // Lấy thông tin khách hàng từ API khi component được tải
   useEffect(() => {
@@ -119,7 +156,7 @@ function BuyPage() {
   const handleSaveAddress = () => {
     form.validateFields().then((values) => {
       // Gộp thành format chuẩn
-      const fullAddress = `${values.street}, Phường ${values.ward}, Quận ${values.district}, Thành phố ${values.province}`;
+      const fullAddress = `${values.street}, ${values.ward}, ${values.district}, ${values.province}`;
 
       setAddressInfo({
         name: addressInfo.name,
@@ -135,11 +172,57 @@ function BuyPage() {
   // thêm hàm này vào trong component BuyPage
   const handleCheckout = async () => {
     try {
+      // Validate địa chỉ cơ bản
+      if (!addressInfo.name || !addressInfo.phone || !addressInfo.address) {
+        api.error({
+          message: "Vui lòng điền đầy đủ thông tin nhận hàng",
+          placement: "topRight",
+        });
+        return;
+      }
+
+      if (isBuyNow) {
+        // mua ngay (1 sp)
+        const product = products[0];
+        if (!product) {
+          api.error({
+            message: "Không có sản phẩm để mua",
+            placement: "topRight",
+          });
+          return;
+        }
+
+        const payload = {
+          san_pham_id: product.id,
+          so_luong: product.quantity,
+          ten_nguoi_nhan: addressInfo.name,
+          so_dien_thoai: addressInfo.phone,
+          dia_chi: addressInfo.address,
+          giam_voucher: discountCode || 0,
+          giam_diem: useKiCoin ? 1000 : 0, // bạn có thể thay bằng logic tính điểm thực tế
+          phuong_thuc_thanh_toan: paymentMethod, // cod | vnpay | momo
+        };
+
+        const res = await cartApi.buyNow(payload);
+        const data = res?.data;
+        console.log("Mua ngay response:", data);
+
+        if (data?.payment_url) {
+          window.location.href = data.payment_url;
+          return;
+        }
+
+        const orderId = data?.don_hang_id;
+        navigate(`/orderSuccess?orderId=${orderId}&gw=${paymentMethod}`);
+        return;
+      }
+
+      // --- Giữ nguyên flow checkout giỏ hàng (bạn đã có sẵn) ---
       const payload = {
         ten_nguoi_nhan: addressInfo.name,
         so_dien_thoai: addressInfo.phone,
         dia_chi: addressInfo.address,
-        phuong_thuc_thanh_toan: paymentMethod, // cod | vnpay | momo
+        phuong_thuc_thanh_toan: paymentMethod,
         su_dung_ki_coin: useKiCoin,
         ma_giam_gia: discountCode || null,
         phi_van_chuyen: cartSummary.phi_van_chuyen,
@@ -151,21 +234,19 @@ function BuyPage() {
 
       const res = await cartApi.checkout(payload);
       const data = res?.data;
-      console.log("Checkout response COD:", data);
-
       if (data?.payment_url) {
-        // Momo hoặc VNPay
         window.location.href = data.payment_url;
         return;
       }
-
-      // COD thì xử lý bình thường
       const orderId = data?.don_hang_id || data?.data?.id || data?.order?.id;
-      navigate(`/orderSuccess?orderId=${orderId}&gw=cod`);
+      navigate(`/orderSuccess?orderId=${orderId}&gw=${paymentMethod}`);
     } catch (error) {
       api.error({
-        message: "Đặt hàng thất bại",
-        description: error?.response?.data?.message || "Vui lòng thử lại.",
+        message: isBuyNow ? "Mua ngay thất bại" : "Đặt hàng thất bại",
+        description:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Vui lòng thử lại.",
         placement: "topRight",
       });
     }
