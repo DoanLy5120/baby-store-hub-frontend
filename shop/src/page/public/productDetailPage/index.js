@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import productApi from "../../../api/productApi";
+import cartApi from "../../../api/cartApi";
 import {
   Image,
   Typography,
@@ -71,7 +72,7 @@ const ProductDetailPage = () => {
     fetchData();
   }, [id]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (quantity > product.soLuongTon) {
       api.warning({
         message: `Vượt quá giới hạn tồn kho`,
@@ -80,53 +81,38 @@ const ProductDetailPage = () => {
       return;
     }
 
-    // Lấy giỏ hàng hiện tại từ localStorage
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    try {
+      const res = await cartApi.add({
+        san_pham_id: product.id,
+        so_luong: quantity,
+      });
 
-    // Kiểm tra sản phẩm đã tồn tại chưa
-    const existingIndex = cart.findIndex((item) => item.id === product.id);
+      if (res?.message || res?.data) {
+        window.dispatchEvent(new Event("cart-updated"));
 
-    if (existingIndex !== -1) {
-      // Nếu đã tồn tại, tăng số lượng
-      cart[existingIndex].quantity += quantity;
-    } else {
-      // Nếu chưa, thêm mới
-      let priceWithVAT = product.giaBan;
-      if (typeof product.VAT !== "undefined") {
-        priceWithVAT = product.giaBan * (1 + product.VAT / 100);
+        api.success({
+          message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
+          placement: "topRight",
+        });
+        
+      } else {
+        api.error({
+          message: "Không thể thêm sản phẩm vào giỏ",
+          description: res?.message || "Lỗi không xác định",
+          placement: "topRight",
+        });
       }
-      // Nếu là sản phẩm sale có giá sau giảm thì lấy giá đó
-      if (typeof product.giaSauGiam !== "undefined") {
-        priceWithVAT = product.giaSauGiam;
-      }
-      cart.push({
-        id: product.id,
-        name: product.tenSanPham,
-        desc: product.moTa,
-        price: product.giaBan,
-        priceWithVAT: priceWithVAT,
-        image: product.hinhAnh,
-        quantity: quantity,
-        stock: product.soLuongTon,
-        isHot: product.is_noi_bat,
-        VAT: product.VAT,
-        discountPercent: product.discountPercent || 0,
+    } catch (error) {
+      api.error({
+        message: "Không thể thêm sản phẩm vào giỏ",
+        description: error.response?.data?.message || error.message,
+        placement: "topRight",
       });
     }
-
-    // Cập nhật lại localStorage
-    localStorage.setItem("cart", JSON.stringify(cart));
-    // Trigger custom event để header cập nhật cartCount ngay lập tức
-    window.dispatchEvent(new Event("cart-updated"));
-
-    api.success({
-      message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng`,
-      placement: "topRight",
-    });
   };
 
   const handleBuyNow = () => {
-    navigate("/buying")
+    navigate("/buying");
   };
 
   if (loading) {

@@ -132,7 +132,6 @@ function BuyPage() {
     });
   };
 
-
   // thêm hàm này vào trong component BuyPage
   const handleCheckout = async () => {
     try {
@@ -152,6 +151,7 @@ function BuyPage() {
 
       const res = await cartApi.checkout(payload);
       const data = res?.data;
+      console.log("Checkout response COD:", data);
 
       if (data?.payment_url) {
         // Momo hoặc VNPay
@@ -160,9 +160,9 @@ function BuyPage() {
       }
 
       // COD thì xử lý bình thường
-      navigate("/orderSuccess");
+      const orderId = data?.don_hang_id || data?.data?.id || data?.order?.id;
+      navigate(`/orderSuccess?orderId=${orderId}&gw=cod`);
     } catch (error) {
-      console.error("❌ Lỗi checkout:", error.response?.data || error);
       api.error({
         message: "Đặt hàng thất bại",
         description: error?.response?.data?.message || "Vui lòng thử lại.",
