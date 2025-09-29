@@ -14,6 +14,7 @@ import Product from "../page/manager/Product/index";
 import Provider from "../page/manager/Provider/index";
 import InventoryCheckSheet from "../page/manager/InventoryCheckSheet/index";
 import GoodsReceipt from "../page/manager/GoodsReceipt/index";
+import Confirm from "../page/manager/Confirm/index";
 import SearchResultsPage from "../page/public/SearchResultsPage/SearchResultsPage";
 import Buy from "../page/customer/BuyPage";
 import OrderSuccess from "../page/customer/OrderSuccess";
@@ -71,6 +72,11 @@ const privateRoutes = [
   {
     path: "/manager/giao-dich/nhap-hang",
     component: GoodsReceipt,
+    layout: ManagerLayout,
+  },
+  {
+    path: "/manager/online",
+    component: Confirm,
     layout: ManagerLayout,
   },
   {

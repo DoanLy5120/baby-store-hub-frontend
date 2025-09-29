@@ -1,0 +1,463 @@
+.order-confirmation {
+  min-height: 100vh;
+  background: rgb(245, 247, 250);
+  padding: 20px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+  .orders-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .order-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .order-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+
+      .order-info {
+        flex: 1;
+
+        .order-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 8px;
+
+          .order-id {
+            font-size: 14px; 
+            font-weight: 600;
+            color: #333;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #0284c7;
+          }
+
+          .tracking-code {
+            font-size: 14px; 
+            color: #0f172a;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-weight: 500;
+          }
+
+          .order-time {
+            font-size: 14px;
+            color: #64748b;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 500;
+          }
+        }
+
+        .order-total {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+
+          .total-label {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+          }
+
+          .total-amount {
+            font-size: 16px; 
+            font-weight: 700;
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 12px;
+          }
+        }
+      }
+
+      .order-status {
+        .status-badge {
+          padding: 6px 12px; 
+          margin-top: 10px;
+          border-radius: 10px;
+          font-size: 14px; 
+          font-weight: 600;
+          text-transform: uppercase;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+          &.pending {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #b45309;
+            border: 2px solid #f59e0b;
+          }
+
+          &.confirmed {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #047857;
+            border: 2px solid #10b981;
+          }
+
+          &.shipping {
+            background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
+            color: #1d4ed8;
+            border: 2px solid #3b82f6;
+          }
+
+          &.cancelled {
+            background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
+            color: #b91c1c;
+            border: 2px solid #ef4444;
+          }
+        }
+      }
+    }
+
+    .customer-info {
+      margin-bottom: 10px;
+
+      .customer-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+
+        .customer-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px;
+
+          .label {
+            font-size: 15px; 
+            font-weight: 600;
+            color: #475569;
+            min-width: 100px;
+          }
+
+          .value {
+            font-size: 15px; 
+            color: #0f172a;
+            flex: 1;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    .products-section {
+      margin-bottom: 20px;
+
+      .products-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        .product-item {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 10px; 
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            border-color: #0ea5e9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(14, 165, 233, 0.15);
+          }
+
+          .product-image {
+            width: 70px; 
+            height: 70px; 
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e2e8f0;
+
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+          }
+
+          .product-details {
+            flex: 1;
+
+            .product-name {
+              font-size: 16px; 
+              font-weight: 600;
+              color: #0f172a;
+              margin-bottom: 6px; 
+              line-height: 1.4;
+            }
+
+            .product-meta {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+
+              .quantity {
+                font-size: 14px; // Tăng từ 12px lên 14px
+                color: #64748b;
+                font-weight: 500;
+                padding: 2px 8px;
+                border-radius: 6px;
+              }
+
+              .price {
+                font-size: 16px; // Tăng từ 13px lên 16px
+                font-weight: 700;
+                color: #333;
+                padding: 6px 12px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .order-actions {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 16px; 
+      border-top: 1px solid #e2e8f0;
+      margin-top: 16px; 
+
+      .confirm-btn {
+        background: #0284c7;
+        color: #ffffff;
+        border: 1px solid #0284c7;
+        padding: 10px 20px; 
+        border-radius: 10px;
+        font-size: 16px; 
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+
+      .confirmed-btn {
+        background: #10b981;
+        color: #fff;
+        border: 1px solid #059669;
+        padding: 10px 20px; 
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .orders-container {
+      gap: 12px;
+    }
+
+    .order-card {
+      padding: 12px;
+
+      .order-card-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+
+        .order-info .order-meta {
+          flex-direction: column;
+          gap: 6px;
+
+          .order-id {
+            font-size: 14px; // Tăng từ 12px lên 14px
+          }
+
+          .tracking-code,
+          .order-time {
+            font-size: 12px; // Tăng từ 10px lên 12px
+          }
+        }
+
+        .order-total {
+          .total-label {
+            font-size: 12px; // Tăng từ 10px lên 12px
+          }
+
+          .total-amount {
+            font-size: 16px; // Tăng từ 12px lên 16px
+          }
+        }
+      }
+
+      .customer-info,
+      .products-section {
+        h3 {
+          font-size: 16px; // Tăng từ 12px lên 16px
+        }
+      }
+
+      .customer-details {
+        grid-template-columns: 1fr;
+
+        .customer-item {
+          .label,
+          .value {
+            font-size: 13px; // Tăng từ 11px lên 13px
+          }
+        }
+      }
+
+      .product-item {
+        padding: 12px;
+
+        .product-image {
+          width: 60px; // Tăng từ 50px lên 60px
+          height: 60px; // Tăng từ 50px lên 60px
+        }
+
+        .product-details {
+          .product-name {
+            font-size: 14px; // Tăng từ 11px lên 14px
+          }
+
+          .product-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+
+            .quantity,
+            .price {
+              font-size: 12px; // Tăng từ 10px lên 12px
+            }
+          }
+        }
+      }
+    }
+
+    .order-actions {
+      .confirm-btn,
+      .confirmed-btn {
+        padding: 10px 20px; // Tăng từ 8px 16px lên 10px 20px
+        font-size: 14px; // Tăng từ 12px lên 14px
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+
+    .order-header {
+      h1 {
+        font-size: 20px; // Tăng từ 18px lên 20px
+      }
+
+      .subtitle {
+        font-size: 12px; // Tăng từ 10px lên 12px
+      }
+    }
+
+    .order-card {
+      padding: 10px;
+
+      .order-card-header {
+        .order-info .order-meta {
+          .order-id {
+            font-size: 12px; // Tăng từ 10px lên 12px
+          }
+
+          .tracking-code,
+          .order-time {
+            font-size: 10px; // Tăng từ 8px lên 10px
+          }
+        }
+
+        .order-total {
+          .total-label {
+            font-size: 10px; // Tăng từ 8px lên 10px
+          }
+
+          .total-amount {
+            font-size: 14px; // Tăng từ 10px lên 14px
+          }
+        }
+      }
+
+      .customer-info,
+      .products-section {
+        h3 {
+          font-size: 14px; // Tăng từ 10px lên 14px
+        }
+      }
+
+      .customer-details {
+        .customer-item {
+          .label,
+          .value {
+            font-size: 11px; // Tăng từ 9px lên 11px
+          }
+        }
+      }
+
+      .product-item {
+        padding: 8px;
+
+        .product-image {
+          width: 50px; // Tăng từ 40px lên 50px
+          height: 50px; // Tăng từ 40px lên 50px
+        }
+
+        .product-details {
+          .product-name {
+            font-size: 12px; // Tăng từ 9px lên 12px
+          }
+
+          .product-meta {
+            .quantity,
+            .price {
+              font-size: 10px; // Tăng từ 8px lên 10px
+            }
+          }
+        }
+      }
+    }
+
+    .order-actions {
+      .confirm-btn,
+      .confirmed-btn {
+        padding: 8px 16px; // Tăng từ 6px 12px lên 8px 16px
+        font-size: 12px; // Tăng từ 10px lên 12px
+      }
+    }
+  }
+}
