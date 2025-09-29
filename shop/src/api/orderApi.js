@@ -18,6 +18,11 @@ const orderApi = {
   reorder: (id) => axiosClient.post(`/don-mua/${id}/reorder`),
 
   showById: (id) => axiosClient.get(`/orders/${id}`),
+
+  getPending: (params) => axiosClient.get("/orders/pending", { params }),
+  
+  moveToReady: (id, body = {}) =>
+    axiosClient.post(`/orders/${id}/to-ready`, body),
 };
 
 export default orderApi;
