@@ -33,7 +33,8 @@ const PrintableDeliveryInvoice = React.forwardRef(({ invoiceData, staffName, dat
     const shippingAddress = orderInfo.dia_chi_giao_hang || orderInfo.dia_chi || '';
     const shippingCode = orderInfo.ma_van_don || 'Đang tạo...';
     const products = invoiceData.san_pham || [];
-    const codAmount = invoiceData.formValues?.codAmount ?? orderInfo.tong_thanh_toan ?? 0;
+    const selectedPartnerFee = shippingPartners.find(p => p.id === invoiceData.formValues?.shippingPartner)?.fee || 0;
+    const codAmount = (orderInfo.tong_tien || 0) - (orderInfo.tong_giam_gia || 0) + selectedPartnerFee;
 
     return (
         <div ref={ref} style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>
@@ -178,6 +179,7 @@ const BanGiaoHang = ({ staffName = "Doãn Ly" }) => {
                 },
                 san_pham: selectedOrder.san_pham || [], 
                 formValues: formValues,
+                shippingPartner,
             };
 
             printComponentInNewWindow(
@@ -217,6 +219,41 @@ const BanGiaoHang = ({ staffName = "Doãn Ly" }) => {
         }
 
         const selectedPartnerFee = shippingPartners.find(p => p.id === shippingPartner)?.fee || 0;
+        const products = selectedOrder.san_pham || [];
+        const columnsProducts = [
+            { 
+                title: 'Tên sản phẩm', 
+                dataIndex: 'ten_san_pham', 
+                key: 'ten_san_pham',
+                ellipsis: true
+            },
+            { 
+                title: 'Số lượng', 
+                dataIndex: 'so_luong', 
+                key: 'so_luong',
+                align: 'center',
+                width: 100
+            },
+            { 
+                title: 'Đơn giá', 
+                dataIndex: 'gia', 
+                key: 'gia',
+                align: 'right',
+                width: 120,
+                render: (text) => formatVND(text || 0)
+            },
+            { 
+                title: 'Thành tiền', 
+                key: 'thanh_tien',
+                align: 'right',
+                width: 120,
+                render: (_, record) => {
+  console.log("record", record);
+  return formatVND(record.thanh_tien || 0);
+}
+
+            }
+        ];
 
         return (
             <Spin spinning={loading} tip="Đang xử lý...">
@@ -242,6 +279,26 @@ const BanGiaoHang = ({ staffName = "Doãn Ly" }) => {
                                     <Input.TextArea rows={2} placeholder="Thêm ghi chú cho đơn vị vận chuyển..."/>
                                 </Form.Item>
                             </Form>
+                            <div style={{ marginTop: 16 }}>
+                                <div style={{ 
+                                    fontWeight: 600, 
+                                    fontSize: 15, 
+                                    marginBottom: 12,
+                                    paddingBottom: 8,
+                                    borderBottom: '1px solid #f0f0f0'
+                                }}>
+                                    Danh sách sản phẩm ({products.length})
+                                </div>
+                                <Table
+                                    dataSource={products}
+                                    columns={columnsProducts}
+                                    rowKey={(record, index) => record.san_pham_id || index}
+                                    size="small"
+                                    pagination={false}
+                                    scroll={{ y: 300 }}
+                                    locale={{ emptyText: 'Không có sản phẩm' }}
+                                />
+                            </div>
                         </div>
                     </Col>
                     <Col span={12} className="bgh-column shipping-column">
@@ -266,7 +323,12 @@ const BanGiaoHang = ({ staffName = "Doãn Ly" }) => {
                             <div className="summary-row"><Text>Tổng tiền hàng</Text><Text>{formatVND(selectedOrder.tong_tien)}</Text></div>
                             <div className="summary-row"><Text>Giảm giá/Voucher</Text><Text>-{formatVND(selectedOrder.tong_giam_gia)}</Text></div>
                             <div className="summary-row"><Text>Phí vận chuyển (dự kiến)</Text><Text>{formatVND(selectedPartnerFee)}</Text></div>
-                            <div className="summary-row total"><Text>Tổng thu</Text><Text>{formatVND(selectedOrder.tong_thanh_toan)}</Text></div>
+                            <div className="summary-row total">
+                                <Text>Tổng thu</Text>
+                                    <Text>
+                                        {formatVND((selectedOrder.tong_tien || 0) - (selectedOrder.tong_giam_gia || 0) + selectedPartnerFee)}
+                                    </Text>
+                            </div>
                             <Button
                                 type="primary"
                                 size="large"
