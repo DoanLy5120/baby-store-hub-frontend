@@ -1,4 +1,4 @@
-// src/api/billApi.js
+
 import axiosClient from "./axiosClient";
 
 const billApi = {

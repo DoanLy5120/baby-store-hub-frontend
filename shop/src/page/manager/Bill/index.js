@@ -37,6 +37,8 @@ import { FaReplyAll } from "react-icons/fa";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
+import { useLocation } from 'react-router-dom';
+
 
 const { Header, Content } = Layout;
 const { Option } = Select;
@@ -46,6 +48,10 @@ export default function Bill() {
   const [loading, setLoading] = useState(false);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const viewInvoiceId = queryParams.get('view');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
@@ -367,6 +373,46 @@ export default function Bill() {
   };
 
   useEffect(() => {
+  if (viewInvoiceId) {
+    (async () => {
+      try {
+        const res = await billApi.getById(viewInvoiceId);
+        const responseData = res.data;
+
+        if (!responseData || !responseData.success) {
+          message.error("Không thể lấy chi tiết hóa đơn");
+          return;
+        }
+
+        const mappedInvoice = mapInvoiceDetailFromAPI(responseData.data);
+        setSelectedInvoice(mappedInvoice);
+
+        form.setFieldsValue({
+          ...mappedInvoice,
+          invoiceCode: mappedInvoice.invoiceCode || "",
+          khachHang: {
+            ten: mappedInvoice.khachHang.ten,
+            soDienThoai: mappedInvoice.khachHang.soDienThoai,
+            diaChi: mappedInvoice.khachHang.diaChi,
+          },
+          items: mappedInvoice.items,
+          shippingCode: mappedInvoice.shippingCode,
+          shippingUnit: mappedInvoice.shippingUnit,
+          shippingFee: mappedInvoice.shippingFee,
+          deliveryStatus: mappedInvoice.deliveryStatus,
+          paymentMethod: mappedInvoice.paymentMethod,
+        });
+
+        setIsModalOpen(true);
+      } catch (err) {
+        message.error("Không thể lấy chi tiết hóa đơn");
+      }
+    })();
+  }
+}, [viewInvoiceId]);
+
+
+  useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await productApi.getAll();
@@ -516,6 +562,7 @@ export default function Bill() {
         {
           key: "momo",
           label: "Momo (Online)",
+
           icon: <IoIosCash />,
         },
         {
