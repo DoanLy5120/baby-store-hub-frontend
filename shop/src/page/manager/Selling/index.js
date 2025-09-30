@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useReactToPrint } from 'react-to-print';
 import {
     Row, Col, Input, Button, Spin, message,
     Typography, Radio, Empty, AutoComplete, InputNumber, Space, Select, Tabs
@@ -13,55 +12,13 @@ import productApi from "../../../api/productApi";
 import customerApi from "../../../api/customerApi";
 import billApi from "../../../api/billApi";
 import { formatVND } from "../../../utils/formatter";
+import { printInvoice } from "../../../utils/printUtilsLe";
 import { useNavigate } from 'react-router-dom';
 import BanGiaoHang from '../BanGiaoHang';
 
 const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
-
-const PrintableInvoice = React.forwardRef(({ invoiceData, staffName, dateTime }, ref) => {
-    if (!invoiceData) return null;
-    return (
-        <div ref={ref} className="invoice-print-container">
-            <h2>HÓA ĐƠN BÁN LẺ</h2>
-            <p><strong>Mã HĐ:</strong> {invoiceData.invoiceCode}</p>
-            <p><strong>Ngày:</strong> {dateTime}</p>
-            <p><strong>Nhân viên:</strong> {staffName}</p>
-            <hr />
-            <p><strong>Khách hàng:</strong> {invoiceData.customerName || "Khách lẻ"}</p>
-            <p><strong>SĐT:</strong> {invoiceData.customerPhone || "N/A"}</p>
-            <hr />
-            <table>
-                <thead>
-                    <tr>
-                        <th>Sản phẩm</th>
-                        <th>SL</th>
-                        <th>Đơn giá</th>
-                        <th>Thành tiền</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {invoiceData.items.map(item => (
-                        <tr key={item.id}>
-                            <td>{item.tenSanPham}</td>
-                            <td>{item.soLuong}</td>
-                            <td>{formatVND(item.giaBan)}</td>
-                            <td>{formatVND(item.soLuong * item.giaBan)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            <hr />
-            <div className="summary">
-                <p><span>Tổng tiền hàng:</span> <span>{formatVND(invoiceData.totalAmount)}</span></p>
-                <p><span>Giảm giá:</span> <span>-{formatVND(invoiceData.discount)}</span></p>
-                <h3><span>Khách phải trả:</span> <span>{formatVND(invoiceData.customerPayment)}</span></h3>
-            </div>
-            <p className="footer-note">Cảm ơn quý khách và hẹn gặp lại!</p>
-        </div>
-    );
-});
 
 function Selling() {
     const navigate = useNavigate();
@@ -85,24 +42,6 @@ function Selling() {
     
     const staffName = "Doãn Ly";
     const [currentTime, setCurrentTime] = useState(new Date());
-
-    const [invoiceDataForPrint, setInvoiceDataForPrint] = useState(null);
-    const printComponentRef = useRef();
-    const handlePrint = useReactToPrint({
-        content: () => printComponentRef.current,
-        onAfterPrint: () => {
-            setInvoiceDataForPrint(null);
-            if (invoiceDataForPrint?.invoiceId) {
-                 navigate(`/manager/giao-dich/hoa-don?view=${invoiceDataForPrint.invoiceId}`);
-            }
-        }
-    });
-
-    useEffect(() => {
-        if (invoiceDataForPrint) {
-            handlePrint();
-        }
-    }, [invoiceDataForPrint, handlePrint]);
     
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000); 
@@ -218,21 +157,33 @@ function Selling() {
         try {
             const response = await billApi.thanhToan(paymentPayload);
             message.success("Thanh toán thành công!");
-            
-            setInvoiceDataForPrint({
+            console.log('Response from API:', response.data);
+            const invoiceData = {
                 ...orderSummary,
                 items: selectedProducts,
                 customerName: selectedCustomer.hoTen,
                 customerPhone: selectedCustomer.sdt,
-                invoiceCode: response.data?.maHoaDon || response.data?.hoaDonId,
+                invoiceCode: response.data?.maHoaDon || `HD - ${response.data?.hoaDonId || 'N/A'}`,
                 invoiceId: response.data?.hoaDonId,
-            });
+            };
+            
 
+           
+            printInvoice(invoiceData, staffName, currentTime.toLocaleString('vi-VN'));
+
+           
             setSelectedProducts([]);
             setSelectedCustomer(null);
             setCustomerSearchValue('');
             setNoteValue('');
             setOrderSummary({ totalAmount: 0, discount: 0, customerPayment: 0, earnedPoints: 0 });
+
+          
+            setTimeout(() => {
+                if (response.data?.hoaDonId) {
+                    navigate(`/manager/giao-dich/hoa-don?view=${response.data.hoaDonId}`);
+                }
+            }, 1000);
 
         } catch (error) {
             message.error(error.response?.data?.message || "Thanh toán thất bại.");
@@ -373,14 +324,6 @@ function Selling() {
                 className="selling-tabs"
                 tabPosition="bottom"
             />
-            <div style={{ display: 'none' }}>
-                <PrintableInvoice 
-                    ref={printComponentRef} 
-                    invoiceData={invoiceDataForPrint}
-                    staffName={staffName}
-                    dateTime={currentTime.toLocaleString('vi-VN')}
-                />
-            </div>
         </div>
     );
 }
