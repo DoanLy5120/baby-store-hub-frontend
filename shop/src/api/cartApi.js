@@ -17,6 +17,7 @@ const cartApi = {
 
   checkout: (payload) => axiosClient.post("/checkout/dat-hang", payload),
 
+  buyNow: (payload) => axiosClient.post("/checkout/mua-ngay", payload),
   
 };
 
