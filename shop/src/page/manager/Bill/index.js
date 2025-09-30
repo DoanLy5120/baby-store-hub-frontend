@@ -37,70 +37,36 @@ import { FaReplyAll } from "react-icons/fa";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
+import { useLocation } from 'react-router-dom';
+
 
 const { Header, Content } = Layout;
 const { Option } = Select;
-
-const mapInvoiceDetailFromAPI = (hoaDon) => {
-  const donHang = hoaDon.don_hang;
-  const khachHangData = hoaDon.khachHang || donHang?.khach_hang || {};
-
-  const paymentMap = {
-    TienMat: "cash",
-    ChuyenKhoan: "transfer",
-    The: "card",
-  };
-
-  const items =
-    donHang?.chi_tiet_don_hang?.map((item) => {
-      const vat = item.san_pham?.VAT || 0;
-      const unitPrice = item.giaBan ; 
-      return {
-        id: item.san_pham?.id,
-        productName: item.productName || "Không tên",
-        quantity: item.soLuong,
-        unitPrice: unitPrice, 
-        discount: item.giamGia || 0,
-        vat: vat,
-        total: unitPrice * item.soLuong, 
-      };
-    }) || [];
-
-  return {
-    id: hoaDon.id,
-    invoiceCode: hoaDon.maHoaDon,
-    paymentMethod: paymentMap[hoaDon.phuongThucThanhToan] || "unknown",
-    totalAmount: parseFloat(hoaDon.tongThanhToan),
-    discount: parseFloat(hoaDon.giamGiaSanPham || 0),
-    vat: parseFloat(hoaDon.thueVAT || 0),
-    customer:
-      khachHangData.hoTen ||
-      khachHangData.ten ||
-      khachHangData.name ||
-      "Khách lẻ",
-    customerPhone:
-      khachHangData.sdt ||
-      khachHangData.soDienThoai ||
-      khachHangData.phone ||
-      "",
-    notes: donHang?.ghiChu || "",
-    status: donHang?.trangThai || "completed",
-    createdAt: moment(hoaDon.ngayXuat).format("HH:mm DD/MM/YYYY"),
-    items: items,
-  };
-};
 
 export default function Bill() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const viewInvoiceId = queryParams.get('view');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
   const [api, contextHolder] = notification.useNotification();
   const [productMap, setProductMap] = useState({});
+
   const [currentPage, setCurrentPage] = useState(1);
+  
+  const items = Form.useWatch("items", form) || [];
+
+  // Tính tổng tiền từ items sử dụng giá trị total từ API
+  const computedTotal = items.reduce((sum, item) => {
+    const total = Number(item.total) || 0;
+    return sum + total;
+  }, 0);
 
   //chuyển trang khi thêm hóa đơn
   const navigate = useNavigate();
@@ -108,98 +74,77 @@ export default function Bill() {
     navigate("/manager/ban-hang");
   };
 
-  const calculateSubTotal = () => {
-    const items = form.getFieldValue("items") || [];
-    const discount = form.getFieldValue("discount") || 0;
+  // Hàm load lại danh sách hóa đơn
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const res = await billApi.getAll();
+      const list = res.data || [];
+      const mapped = list
+        .map(mapInvoiceListFromAPI)
+        .filter((inv) => inv !== null);
 
-    const sum = items.reduce((total, item) => {
-      const quantity = item?.quantity || 0;
-      const unitPrice = item?.unitPrice || 0;
-      return total + quantity * unitPrice;
-    }, 0);
-
-    return sum - discount;
-  };
-
-  const calculateTongTienHang = () => {
-    const items = form.getFieldValue("items") || [];
-
-    const sum = items.reduce((total, item) => {
-      const quantity = item?.quantity || 0;
-      const unitPrice = item?.unitPrice || 0;
-      const vat = item?.vat || 0;
-      return total + quantity * unitPrice * (1 + vat);
-    }, 0);
-
-    return sum;
+      setInvoices(mapped);
+      setFilteredInvoices(mapped);
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách hóa đơn:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   //tạo ra danh sách hóa đơn đã được tìm kiếm qua mã hđ hoặc tên kh
   const searchedInvoices = filteredInvoices.filter(
     (invoice) =>
-      (invoice.invoiceCode || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (invoice.customer || "").toLowerCase().includes(searchTerm.toLowerCase())
+      invoice && (
+        (invoice.invoiceCode || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (invoice.customer || "").toLowerCase().includes(searchTerm.toLowerCase())
+      )
   );
 
   //click vào 1 hđ
   const handleInvoiceClick = async (invoice) => {
     try {
       const res = await billApi.getById(invoice.id);
-      const fullInvoice = res.data?.data;
 
-      if (!fullInvoice) {
+      // Xử lý response có cấu trúc {success: true, data: {...}}
+      const responseData = res.data;
+
+      if (!responseData || !responseData.success) {
         message.error("Không thể lấy chi tiết hóa đơn");
         return;
       }
 
-      const hoaDonData = {
-        id: fullInvoice.hoaDon.id,
-        maHoaDon: fullInvoice.hoaDon.maHoaDon,
-        khachHang: fullInvoice.khachHang,
-        phuongThucThanhToan: fullInvoice.hoaDon.phuongThucThanhToan,
-        tongTienHang: fullInvoice.hoaDon.tongTienHang,
-        giamGiaSanPham: fullInvoice.hoaDon.giamGia,
-        thueVAT: fullInvoice.hoaDon.thueVAT,
-        tongThanhToan: fullInvoice.hoaDon.tongThanhToan,
-        ngayXuat: fullInvoice.hoaDon.ngayXuat,
-        don_hang: {
-          khach_hang: fullInvoice.khachHang || {},
-          ghiChu: fullInvoice.ghiChu || "",
-          trangThai: fullInvoice.trangThai || "completed",
-          chi_tiet_don_hang: (fullInvoice.sanPhams || []).map((sp) => ({
-            san_pham: {
-              id: sp.id,
-              VAT: parseFloat(sp.VAT) / 100 || 0,
-            },
-            productName: productMap[sp.id] || "Không tên",
-            soLuong: parseInt(sp.soLuong),
-            giaBan: parseFloat(sp.giaBan),
-            giamGia: parseFloat(sp.giamGia),
-            tongTien: parseFloat(sp.tongTien),
-          })),
-        },
-      };
+      // mapping hóa đơn từ response chi tiết - truyền responseData.data thay vì responseData
+      const mappedInvoice = mapInvoiceDetailFromAPI(responseData.data);
 
-      const mappedInvoice = mapInvoiceDetailFromAPI(hoaDonData);
+      if (!mappedInvoice) {
+        message.error("Lỗi khi xử lý dữ liệu hóa đơn");
+        return;
+      }
 
-      const itemsWithKeys = mappedInvoice.items.map((item, idx) => ({
-        ...item,
-        key: item.id || idx,
-      }));
+      setSelectedInvoice(mappedInvoice);
 
-      const finalInvoice = {
+      // gán giá trị cho form
+      form.setFieldsValue({
         ...mappedInvoice,
-        items: itemsWithKeys,
+        invoiceCode: mappedInvoice.invoiceCode || "",
         khachHang: {
-          ten: mappedInvoice.customer,
-          soDienThoai: mappedInvoice.customerPhone,
+          ten: mappedInvoice.khachHang.ten,
+          soDienThoai: mappedInvoice.khachHang.soDienThoai,
         },
-      };
+        items: mappedInvoice.items,
+        // Thêm các field vận chuyển nếu có
+        shippingCode: mappedInvoice.shippingCode,
+        shippingUnit: mappedInvoice.shippingUnit,
+        shippingFee: mappedInvoice.shippingFee,
+        deliveryStatus: mappedInvoice.deliveryStatus, // Sửa từ status thành deliveryStatus
+        // Thêm field phương thức thanh toán
+        paymentMethod: mappedInvoice.paymentMethod,
+      });
 
-      setSelectedInvoice(finalInvoice);
-      form.setFieldsValue(finalInvoice);
       setIsModalOpen(true);
     } catch (err) {
       message.error("Không thể lấy chi tiết hóa đơn");
@@ -208,47 +153,67 @@ export default function Bill() {
 
   const handleSaveInvoice = async () => {
     try {
+      // Kiểm tra selectedInvoice có tồn tại không
+      if (!selectedInvoice) {
+        api.error({
+          message: "Lỗi",
+          description: "Không tìm thấy hóa đơn để cập nhật!",
+          placement: "topRight",
+        });
+        return;
+      }
+
       const values = await form.validateFields();
 
-      if (!values.items || values.items.length === 0) {
-        message.error("Hóa đơn phải có ít nhất 1 sản phẩm!");
+      // Sử dụng items từ form hoặc selectedInvoice.items làm fallback
+      const currentItems = values.items && values.items.length > 0 ? values.items : selectedInvoice.items || [];
+
+      if (currentItems.length === 0) {
+        api.error({
+          message: "Lỗi",
+          description: "Hóa đơn phải có ít nhất 1 sản phẩm!",
+          placement: "topRight",
+        });
         return;
       }
 
       const oldIds = selectedInvoice?.items?.map((item) => item.id) || [];
-      const newIds = values.items?.map((item) => item.id) || [];
+      const newIds = currentItems?.map((item) => item.id) || [];
       const xoaSanPhamIds = oldIds.filter((id) => !newIds.includes(id));
 
       const paymentMapReverse = {
-        cash: "TienMat",
-        transfer: "ChuyenKhoan",
-        card: "The",
+        momo: "momo",
+        vnpay: "vnpay",
+        cod: "cod",
+        bank_transfer: "bank",
+        credit_card: "card",
       };
 
       const payload = {
-        tongTienHang: calculateTongTienHang(),
-        giamGiaSanPham: values.discount || 0,
+        tongTienHang: currentItems.length > 0 ? computedTotal : (selectedInvoice?.subTotal || 0),
+        giamVoucher: selectedInvoice?.discountVoucher || 0,
+        giamDiem: selectedInvoice?.discountPoint || 0,
         thueVAT: values.vat || 0,
-        tongThanhToan: calculateSubTotal(),
-        phuongThucThanhToan:
-          paymentMapReverse[values.paymentMethod] || "TienMat",
-        ghiChu: values.notes || "",
-        trangThai: values.status || "completed",
-        tenKhachHang: values.customer || "Khách lẻ",
-        soDienThoai: values.customerPhone || "",
-        xoaSanPhamIds: xoaSanPhamIds,
-        sanPhams: values.items.map((item) => ({
+        tongThanhToan: currentItems.length > 0 ? computedTotal : (selectedInvoice?.totalAmount || 0),
+        phuongThucThanhToan: values.paymentMethod,
+        ghiChu: values.orderNote || "",
+        trangThai: values.deliveryStatus || "CHO_LAY_HANG", // Sửa từ status thành deliveryStatus
+        tenKhachHang: values.khachHang?.ten || "Khách lẻ",
+        soDienThoai: values.khachHang?.soDienThoai || "",
+        sanPhams: currentItems.map((item) => ({
           id: item.id,
           soLuong: item.quantity,
           giaBan: item.unitPrice,
           giamGia: item.discount || 0,
           tongTien: item.total,
         })),
+        xoaSanPhamIds,
       };
 
       const res = await billApi.update(selectedInvoice.id, payload);
 
-      if (res.data?.message) {
+      // Kiểm tra response thành công
+      if (res.data && (res.data.success || res.data.message)) {
         api.success({
           message: "Cập nhật hóa đơn thành công",
           placement: "topRight",
@@ -258,19 +223,127 @@ export default function Bill() {
         setIsModalOpen(false);
         setSelectedInvoice(null);
 
-        const updated = mapInvoiceDetailFromAPI(res.data.data);
-        const updatedList = invoices.map((inv) =>
-          inv.id === selectedInvoice.id ? updated : inv
-        );
-        setInvoices(updatedList);
-        setFilteredInvoices(updatedList);
-        setSelectedInvoice(updated);
+        // Load lại danh sách hóa đơn từ API để đảm bảo dữ liệu mới nhất
+        await fetchInvoices();
       } else {
-        throw new Error("Lỗi không xác định");
+        throw new Error("Cập nhật không thành công");
       }
     } catch (error) {
-      message.error("Vui lòng kiểm tra lại thông tin!");
+      console.error("Lỗi cập nhật hóa đơn:", error);
+      api.error({
+        message: "Cập nhật hóa đơn thất bại",
+        description: error.response?.data?.message || error.message || "Vui lòng kiểm tra lại thông tin!",
+        placement: "topRight",
+      });
     }
+  };
+
+  // ====== MAPPING CHO LIST (BẢNG) - dùng khi gọi billApi.getAll() ======
+  const mapInvoiceListFromAPI = (hoaDon) => {
+    if (!hoaDon) return null;
+
+    const donHang = hoaDon.don_hang || {};
+    const khachHangData = donHang.khach_hang || {};
+
+    return {
+      id: hoaDon.id || "",
+      invoiceCode: hoaDon.ma_hoa_don || "",
+      orderCode: donHang.ma_don_hang || "",
+      // payment method trả ở list là snake_case
+      paymentMethod:
+        hoaDon.phuong_thuc_thanh_toan ||
+        donHang.phuong_thuc_thanh_toan ||
+        "unknown",
+      subTotal: parseFloat(hoaDon.tong_tien_hang || 0),
+      discountVoucher: parseFloat(hoaDon.giam_voucher || 0),
+      discountPoint: parseFloat(hoaDon.giam_diem || 0),
+      shippingFee: parseFloat(hoaDon.phi_van_chuyen || 0),
+      totalAmount: parseFloat(hoaDon.tong_thanh_toan || 0),
+      khachHang: {
+        ten: khachHangData.hoTen || donHang.ten_nguoi_nhan || "Khách lẻ",
+        soDienThoai: khachHangData.sdt || donHang.so_dien_thoai || "",
+        diaChi: khachHangData.diaChi || donHang.dia_chi || "",
+      },
+      orderNote: donHang.ghi_chu || "",
+      shippingUnit: donHang.don_vi_van_chuyen || "",
+      shippingCode: donHang.ma_van_don || "",
+      status: donHang.trang_thai || "CHO_LAY_HANG",
+      // format thời gian giống phần hiển thị
+      createdAt: hoaDon.ngay_xuat
+        ? moment(hoaDon.ngay_xuat).format("HH:mm DD/MM/YYYY")
+        : "",
+      // để an toàn, items rỗng ở list
+      items: donHang.chi_tiet_don_hang || [],
+    };
+  };
+
+  // ====== MAPPING CHO DETAIL (MODAL) - dùng khi gọi billApi.getById(id) ======
+  const mapInvoiceDetailFromAPI = (responseData) => {
+    // responseData là res.data từ API chi tiết: { success: true, data: { hoaDon, khachHang, sanPhams, vanChuyen, ... } }
+    if (!responseData || !responseData.hoaDon)
+      return null;
+
+    const hoaDon = responseData.hoaDon || {};
+    const khachHang = responseData.khachHang || {};
+    const sanPhams = responseData.sanPhams || [];
+    const vanChuyen = responseData.vanChuyen || null;
+    const trangThai = responseData.trangThai || "";
+
+    // payment map (FE canonical)
+    const paymentMap = {
+      momo: "momo",
+      vnpay: "vnpay",
+      cash: "cash",
+      cod: "cod",
+      bank_transfer: "bank_transfer",
+      credit_card: "credit_card",
+    };
+
+    const mappedItems = sanPhams.map((sp) => ({
+      id: sp.id || "",
+      productName: sp.tenSanPham || "",
+      quantity: parseInt(sp.soLuong || 0, 10),
+      unitPrice: parseFloat(sp.giaBan || 0),
+      VAT: parseFloat(sp.VAT || 0),
+      discount: parseFloat(sp.flashSale || 0) *100 ,
+      total: parseFloat(sp.tongTien || 0),
+    }));
+
+    // keep aliases used by your UI (selectedInvoice.discount was used in print block),
+    // nên gán thêm discount = discountVoucher để UI cũ không cần sửa
+    const discountVoucher = parseFloat(hoaDon.giamVoucher || 0);
+
+    return {
+      id: hoaDon.id || "",
+      invoiceCode: hoaDon.maHoaDon || "",
+      orderCode: hoaDon.maDonHang || "",
+      paymentMethod:
+        paymentMap[hoaDon.phuongThucThanhToan] ||
+        paymentMap[hoaDon.phuong_thuc_thanh_toan] ||
+        "unknown",
+      subTotal: parseFloat(hoaDon.tongTienHang || 0),
+      discountVoucher,
+      discount: discountVoucher, // alias để UI dùng selectedInvoice.discount vẫn đúng
+      discountPoint: parseFloat(hoaDon.giamDiem || 0),
+      VAT: parseFloat(hoaDon.thueVAT || 0),
+      shippingFee: vanChuyen ? parseFloat(vanChuyen.phiVanChuyen || 0) : 0,
+      totalAmount: parseFloat(hoaDon.tongThanhToan || 0),
+      khachHang: {
+        ten: khachHang.ten || "Khách lẻ",
+        soDienThoai: khachHang.soDienThoai || "",
+        diaChi: khachHang.diaChi || "",
+      },
+      orderNote: responseData.ghiChu || "",
+      shippingUnit: vanChuyen ? vanChuyen.donVi || vanChuyen.don_vi || "" : "",
+      shippingCode: vanChuyen
+        ? vanChuyen.maVanDon || vanChuyen.ma_van_don || ""
+        : "",
+      deliveryStatus: trangThai || "CHO_LAY_HANG",
+      createdAt: hoaDon.ngayXuat
+        ? moment(hoaDon.ngayXuat).format("HH:mm DD/MM/YYYY")
+        : "",
+      items: mappedItems,
+    };
   };
 
   //xóa hóa đơn
@@ -300,24 +373,46 @@ export default function Bill() {
   };
 
   useEffect(() => {
-    const fetchInvoices = async () => {
+  if (viewInvoiceId) {
+    (async () => {
       try {
-        setLoading(true);
+        const res = await billApi.getById(viewInvoiceId);
+        const responseData = res.data;
 
-        const res = await billApi.getAll();
-        const list = res.data || [];
+        if (!responseData || !responseData.success) {
+          message.error("Không thể lấy chi tiết hóa đơn");
+          return;
+        }
 
-        const mapped = list.map(mapInvoiceDetailFromAPI);
+        const mappedInvoice = mapInvoiceDetailFromAPI(responseData.data);
+        setSelectedInvoice(mappedInvoice);
 
-        setInvoices(mapped);
-        setFilteredInvoices(mapped);
+        form.setFieldsValue({
+          ...mappedInvoice,
+          invoiceCode: mappedInvoice.invoiceCode || "",
+          khachHang: {
+            ten: mappedInvoice.khachHang.ten,
+            soDienThoai: mappedInvoice.khachHang.soDienThoai,
+            diaChi: mappedInvoice.khachHang.diaChi,
+          },
+          items: mappedInvoice.items,
+          shippingCode: mappedInvoice.shippingCode,
+          shippingUnit: mappedInvoice.shippingUnit,
+          shippingFee: mappedInvoice.shippingFee,
+          deliveryStatus: mappedInvoice.deliveryStatus,
+          paymentMethod: mappedInvoice.paymentMethod,
+        });
+
+        setIsModalOpen(true);
       } catch (err) {
-        console.error("Lỗi khi tải danh sách hóa đơn:", err);
-      } finally {
-        setLoading(false);
+        message.error("Không thể lấy chi tiết hóa đơn");
       }
-    };
+    })();
+  }
+}, [viewInvoiceId]);
 
+
+  useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await productApi.getAll();
@@ -337,15 +432,6 @@ export default function Bill() {
     fetchProducts();
     fetchInvoices();
   }, []);
-
-
-  const updateItemTotal = (index) => {
-    const items = form.getFieldValue("items") || [];
-    const quantity = items[index]?.quantity || 0;
-    const unitPrice = items[index]?.unitPrice || 0;
-    const total = quantity * unitPrice;
-    form.setFieldValue(["items", index, "total"], total);
-  };
 
   //in hóa đơn
   const handlePrintInvoice = () => {
@@ -370,21 +456,24 @@ export default function Bill() {
     },
     {
       title: "Khách hàng",
-      dataIndex: "customer",
       key: "customer",
-      render: (text) => text || "Chưa có tên",
+      render: (record) => record.khachHang?.ten || "Chưa có tên",
     },
     {
       title: "Giảm giá",
-      dataIndex: "discount",
-      key: "discount",
-      render: (amount) => <span className="discount">{formatVND(amount)}</span>,
+      dataIndex: "discountVoucher", // đổi đúng field
+      key: "discountVoucher",
+      render: (amount) => (
+        <span className="discount">{formatVND(amount || 0)}</span>
+      ),
     },
     {
       title: "Thành tiền",
       dataIndex: "totalAmount",
       key: "totalAmount",
-      render: (amount) => <span className="amount">{formatVND(amount)}</span>,
+      render: (amount) => (
+        <span className="amount">{formatVND(amount || 0)}</span>
+      ),
     },
     {
       title: "Thời gian tạo",
@@ -392,21 +481,33 @@ export default function Bill() {
       key: "createdAt",
     },
     {
-      title: "Phương thức thanh toán",
+      title: "Thanh toán",
       dataIndex: "paymentMethod",
       key: "paymentMethod",
       render: (method) => {
         switch (method) {
+          case "momo":
+          case "vnpay":
+            return "Thanh toán Online";
           case "cash":
-            return "Tiền Mặt";
-          case "transfer":
-            return "Chuyển Khoản";
-          case "card":
+            return "Tiền mặt"; 
+          case "cod":
+            return "Ship COD";
+          case "bank_transfer":
+            return "Chuyển khoản";
+          case "credit_card":
             return "Thẻ";
           default:
             return "Không xác định";
         }
       },
+    },
+    {
+      title: "Phương thức",
+      dataIndex: "shippingFee",
+      key: "shippingFee",
+      render: (fee) =>
+        parseFloat(fee) > 0 ? "Bán Online" : "Bán tại cửa hàng",
     },
     {
       title: "Thao tác",
@@ -432,16 +533,8 @@ export default function Bill() {
         { key: "hom_nay", label: "Hôm nay", icon: <CalendarOutlined /> },
         { key: "hom_qua", label: "Hôm qua", icon: <CalendarOutlined /> },
         { key: "tuan_nay", label: "Tuần này", icon: <CalendarOutlined /> },
-        {
-          key: "tuan_truoc",
-          label: "Tuần trước",
-          icon: <CalendarOutlined />,
-        },
-        {
-          key: "thang_nay",
-          label: "Tháng này",
-          icon: <CalendarOutlined />,
-        },
+        { key: "tuan_truoc", label: "Tuần trước", icon: <CalendarOutlined /> },
+        { key: "thang_nay", label: "Tháng này", icon: <CalendarOutlined /> },
         {
           key: "thang_truoc",
           label: "Tháng trước",
@@ -467,17 +560,27 @@ export default function Bill() {
       icon: <UserOutlined />,
       children: [
         {
-          key: "TienMat",
-          label: "Tiền Mặt",
+          key: "momo",
+          label: "Momo (Online)",
           icon: <IoIosCash />,
         },
         {
-          key: "ChuyenKhoan",
-          label: "Chuyển Khoản",
+          key: "vnpay",
+          label: "VNPay (Online)",
+          icon: <IoIosCash />,
+        },
+        {
+          key: "cod",
+          label: "Tiền mặt",
+          icon: <IoIosCash />,
+        },
+        {
+          key: "bank_transfer",
+          label: "Chuyển khoản",
           icon: <FaMoneyBillTransfer />,
         },
         {
-          key: "The",
+          key: "credit_card",
           label: "Thẻ",
           icon: <FaMoneyBillTransfer />,
         },
@@ -491,9 +594,9 @@ export default function Bill() {
       setLoading(true);
 
       const res = await billApi.getAll({ params: { thoiGian: key } });
-      const list = res.data || []; 
+      const list = res.data || [];
 
-      const mapped = list.map(mapInvoiceDetailFromAPI);
+      const mapped = list.map(mapInvoiceListFromAPI);
       setFilteredInvoices(mapped);
     } catch (err) {
       message.error("Lọc hóa đơn theo thời gian thất bại");
@@ -510,7 +613,7 @@ export default function Bill() {
       const res = await billApi.getAll({ params: { phuongThuc: methodKey } });
       const list = res.data || [];
 
-      const mapped = list.map(mapInvoiceDetailFromAPI);
+      const mapped = list.map(mapInvoiceListFromAPI);
       setFilteredInvoices(mapped);
     } catch (err) {
       message.error("Lọc hóa đơn theo phương thức thất bại");
@@ -523,13 +626,37 @@ export default function Bill() {
   const renderPrintableInvoice = () => {
     if (!selectedInvoice) return null;
 
+    // Kiểm tra xem có thông tin vận chuyển không
+    const hasShippingInfo = selectedInvoice?.shippingCode;
+
     return (
       <div id="print-invoice" style={{ display: "none" }}>
         <h2 className="section-title">
-          Chi tiết hóa đơn - {selectedInvoice.invoiceCode}
+          Chi tiết hóa đơn - {selectedInvoice?.invoiceCode || "N/A"}
         </h2>
-        <p>Khách hàng: {selectedInvoice.customer}</p>
-        <p>SĐT: {selectedInvoice.customerPhone}</p>
+        
+        {/* Thông tin khách hàng */}
+        <div className="customer-info">
+          <p>Khách hàng: {selectedInvoice?.khachHang?.ten || "N/A"}</p>
+          <p>SĐT: {selectedInvoice?.khachHang?.soDienThoai || "N/A"}</p>
+          {hasShippingInfo && selectedInvoice?.khachHang?.diaChi && (
+            <p>Địa chỉ giao hàng: {selectedInvoice.khachHang.diaChi}</p>
+          )}
+        </div>
+
+        {/* Thông tin vận chuyển - chỉ hiển thị khi có mã vận đơn */}
+        {hasShippingInfo && (
+          <div className="shipping-info">
+            <h3>Thông tin vận chuyển</h3>
+            <p>Mã vận đơn: {selectedInvoice.shippingCode}</p>
+            {selectedInvoice.shippingUnit && (
+              <p>Đơn vị vận chuyển: {selectedInvoice.shippingUnit}</p>
+            )}
+            {selectedInvoice.shippingFee && (
+              <p>Phí vận chuyển: {formatVND(selectedInvoice.shippingFee)}</p>
+            )}
+          </div>
+        )}
 
         <h3>Chi tiết sản phẩm</h3>
         <table
@@ -546,23 +673,29 @@ export default function Bill() {
             </tr>
           </thead>
           <tbody>
-            {selectedInvoice.items.map((item, index) => (
-              <tr key={index}>
+            {selectedInvoice?.items?.map((item) => (
+              <tr key={item.id}>
                 <td>{item.productName}</td>
                 <td>{item.quantity}</td>
-                <td>{item.unitPrice.toLocaleString("vi-VN")}₫</td>
-                <td>{item.total.toLocaleString("vi-VN")}₫</td>
+                <td>{formatVND(item.unitPrice)}</td>
+                <td>{formatVND(item.total)}</td>
               </tr>
-            ))}
+            )) || []}
           </tbody>
         </table>
 
-        <p style={{ marginTop: 16 }}>
-          Giảm giá: {selectedInvoice.discount.toLocaleString("vi-VN")}₫
-        </p>
-        <h3 className="total">
-          Tổng tiền: {selectedInvoice.totalAmount.toLocaleString("vi-VN")}₫
-        </h3>
+        {/* Thông tin tổng tiền */}
+        <div className="payment-summary">
+          <p style={{ marginTop: 16 }}>
+            Giảm giá: {formatVND(selectedInvoice?.discount || 0)}
+          </p>
+          {hasShippingInfo && selectedInvoice?.shippingFee && (
+            <p>Phí vận chuyển: {formatVND(selectedInvoice.shippingFee)}</p>
+          )}
+          <h3 className="total">
+            Tổng tiền: {formatVND(items.length > 0 ? computedTotal : (selectedInvoice?.totalAmount || 0))}
+          </h3>
+        </div>
 
         <div className="signature">
           <p>Người lập hóa đơn: ________________________</p>
@@ -664,7 +797,7 @@ export default function Bill() {
                 <EditOutlined />
                 {selectedInvoice &&
                 invoices.find((inv) => inv.id === selectedInvoice.id)
-                  ? `Chi tiết hóa đơn - ${selectedInvoice?.invoiceCode}`
+                  ? `Chi tiết hóa đơn - ${selectedInvoice?.invoiceCode || "N/A"}`
                   : "Tạo hóa đơn mới"}
               </Space>
             }
@@ -729,12 +862,12 @@ export default function Bill() {
                       name="invoiceCode"
                       rules={[
                         {
-                          required: true,
+                          required: false,
                           message: "Vui lòng nhập mã hóa đơn!",
                         },
                       ]}
                     >
-                      <Input />
+                      <Input disabled placeholder="Mã hóa đơn sẽ được tạo tự động" />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
@@ -759,33 +892,84 @@ export default function Bill() {
                       <Input placeholder="Số điện thoại khách hàng" />
                     </Form.Item>
                   </Col>
+
+                  {/* ✅ Nếu có mã vận đơn thì mới hiển thị các field dưới */}
+                  {/* Hiển thị thông tin vận chuyển nếu có mã vận đơn */}
+                  {selectedInvoice?.shippingCode && (
+                    <>
+                      <Col span={12}>
+                        <Form.Item label="Mã vận đơn" name="shippingCode">
+                          <Input placeholder="Mã vận đơn" disabled />
+                        </Form.Item>
+                      </Col>
+
+                      <Col span={12}>
+                        <Form.Item
+                          label="Đơn vị vận chuyển"
+                          name="shippingUnit"
+                        >
+                          <Input placeholder="Đơn vị vận chuyển" />
+                        </Form.Item>
+                      </Col>
+
+                      <Col span={12}>
+                        <Form.Item label="Phí vận chuyển" name="shippingFee">
+                          <InputNumber
+                            min={0}
+                            style={{ width: "100%" }}
+                            formatter={(value) =>
+                              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                            }
+                            parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                            addonAfter="VND"
+                          />
+                        </Form.Item>
+                      </Col>
+
+                      <Col span={12}>
+                        <Form.Item
+                          label="Trạng thái giao hàng"
+                          name="deliveryStatus"
+                        >
+                          <Select placeholder="Chọn trạng thái">
+                            <Option value="CHO_LAY_HANG">Chờ lấy hàng</Option>
+                            <Option value="DANG_GIAO">Đang giao</Option>
+                            <Option value="DA_GIAO">Đã giao</Option>
+                            <Option value="HOAN_THANH">Hoàn thành</Option>
+                            <Option value="DA_HUY">Đã hủy</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                    </>
+                  )}
+
                   <Col span={12}>
-                    <Form.Item label="Trạng thái" name="status">
-                      <Select>
-                        <Option value="processing">Đang xử lý</Option>
-                        <Option value="completed">Hoàn thành</Option>
-                        <Option value="cancelled">Đã hủy</Option>
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={24}>
                     <Form.Item
                       label="Phương thức thanh toán"
                       name="paymentMethod"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Vui lòng chọn phương thức thanh toán!",
-                        },
-                      ]}
                     >
-                      <Select placeholder="Chọn phương thức">
-                        <Option value="cash">Tiền mặt</Option>
-                        <Option value="transfer">Chuyển khoản</Option>
-                        <Option value="card">Thẻ</Option>
-                      </Select>
+                      <Select
+                        placeholder="Chọn phương thức"
+                        options={[
+                          { value: "cash", label: "Tiền mặt" },
+                          { value: "bank_transfer", label: "Chuyển khoản" },
+                          { value: "credit_card", label: "Thẻ" },
+                        ]}
+                      />
                     </Form.Item>
                   </Col>
+
+                  {/* Hiển thị địa chỉ giao hàng chỉ khi có mã vận đơn */}
+                  {selectedInvoice?.shippingCode && (
+                    <Col span={24}>
+                      <Form.Item
+                        label="Địa chỉ giao hàng"
+                        name={["khachHang", "diaChi"]}
+                      >
+                        <Input placeholder="Địa chỉ giao hàng" />
+                      </Form.Item>
+                    </Col>
+                  )}
                 </Row>
               </div>
 
@@ -824,10 +1008,7 @@ export default function Bill() {
                                 ]}
                                 noStyle
                               >
-                                <InputNumber
-                                  min={1}
-                                  onChange={() => updateItemTotal(index)}
-                                />
+                                <InputNumber min={1} />
                               </Form.Item>
                             ),
                           },
@@ -840,13 +1021,21 @@ export default function Bill() {
                             },
                           },
                           {
+                            title: "Giảm giá",
+                            render: (_, record, index) => {
+                              const items = form.getFieldValue("items") || [];
+                              const discount = items[index]?.discount || 0;
+                              return <span>{discount}%</span>;
+                            },
+                          },
+                          {
                             title: "Thành tiền",
                             render: (_, record, index) => {
                               const items = form.getFieldValue("items") || [];
-                              const unitPrice = items[index]?.unitPrice || 0;
-                              const quantity = items[index]?.quantity || 0;
-                              const total = unitPrice * quantity;
-                              return <span>{formatVND(total)}</span>;
+                              const total = items[index]?.total || 0;
+                              return (
+                                <span>{formatVND(total)}</span>
+                              );
                             },
                           },
                           {
@@ -870,7 +1059,7 @@ export default function Bill() {
               <div className="bill__modal">
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item label="Giảm giá" name="discount">
+                    <Form.Item label="Giảm giá" name="discountVoucher">
                       <InputNumber
                         min={0}
                         style={{ width: "100%" }}
@@ -884,7 +1073,7 @@ export default function Bill() {
                   <Col span={12}>
                     <Form.Item label="Tổng tiền">
                       <div className="total-amount">
-                        {formatVND(calculateSubTotal())}
+                        {formatVND(items.length > 0 ? computedTotal : (selectedInvoice?.totalAmount || 0))}
                       </div>
                     </Form.Item>
                   </Col>
