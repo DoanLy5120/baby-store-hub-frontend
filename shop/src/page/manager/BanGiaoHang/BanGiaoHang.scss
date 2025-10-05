@@ -1,139 +1,321 @@
 .ban-giao-hang-wrapper {
+  display: flex !important;
+  flex-direction: column;
+  height: 78vh;
+  background-color: rgb(244, 247, 255); // nền dịu hơn
+
+  .bgh-header {
+    padding: 14px 28px;
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 20px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .bgh-content {
+    flex-grow: 1;
+    padding: 20px;
+    height: 78vh;
+    .ant-row {
+      height: 100%;
+      display: flex; // ép flexbox
+      flex-direction: row; // ngang hàng
+      gap: 20px; // thêm khoảng cách giữa 2 cột
+    }
+
+    .ant-col {
+      height: 106%; // mỗi cột full height
+      display: flex; // để cột stretch theo chiều cao
+      flex-direction: column;
+    }
+  }
+
+  .bgh-column {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    background-color: #f0f2f5;
+    height: 73vh;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
 
-    .bgh-header {
-        padding: 12px 24px;
-        background-color: #fff;
-        border-bottom: 1px solid #d9d9d9;
-        font-size: 20px;
-        font-weight: 600;
-        flex-shrink: 0;
+    .bgh-column-header {
+      padding: 14px 18px;
+      font-weight: 600;
+      font-size: 16px;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
     }
 
-    .bgh-content {
-        flex-grow: 1;
-        padding: 16px;
-        // overflow: hidden;
+    .bgh-column-body {
+      padding: 16px;
+      overflow-y: auto;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      max-height: 80%;
+      gap: 0 !important;
 
-        .ant-row {
-            height: 100%;
+      .ant-form-vertical {
+        .ant-form-item-label {
+          padding-bottom: 2px !important; // giảm padding label
+          margin-bottom: 0 !important;
         }
-        .ant-col {
-            height: 100%;
+
+        .ant-form-item-control-input {
+          min-height: auto !important; // bỏ min-height mặc định
+          margin-top: 2px !important; // khoảng cách label–input = 2px
         }
+
+        .ant-form-item {
+          margin-bottom: 10px !important; // khoảng cách giữa các Form.Item
+        }
+      }
+
+      // card
+      .ant-card {
+        margin-bottom: 10px !important;
+      }
     }
 
-    .bgh-column {
-        display: flex;
-        flex-direction: column;
+    .bgh-column-footer {
+      padding: 18px 20px;
+      border-top: 1px solid #eee;
+      background-color: #fafafa;
+      flex-shrink: 0;
+    }
+  }
+
+  .order-list-column {
+    flex: 1.4; // trái rộng hơn
+    .filter-section {
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      background: #fafafa;
+    }
+
+    .ant-table-wrapper {
+      height: 100%;
+      .ant-table {
         height: 100%;
-        background-color: #fff;
         border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         overflow: hidden;
-
-        .bgh-column-header {
-            padding: 12px 16px;
-            font-weight: 600;
-            font-size: 16px;
-            border-bottom: 1px solid #f0f0f0;
-            flex-shrink: 0;
-        }
-
-        .bgh-column-body {
-            padding: 16px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-
-        .bgh-column-footer {
-            padding: 16px;
-            border-top: 1px solid #f0f0f0;
-            background-color: #fafafa;
-            flex-shrink: 0;
-        }
+      }
     }
 
-    .order-list-column {
-        .filter-section {
-            padding: 16px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .ant-table-wrapper {
-            height: 100%;
-            .ant-spin-container, .ant-table {
-                height: 100%;
-            }
-        }
-        .ant-table-row {
-            cursor: pointer;
-            &:hover > td {
-                background: #f5f5f5;
-            }
-            &.ant-table-row-selected > td {
-                background-color: #e6f7ff !important;
-            }
-        }
-    }
-    
-    .loading-container, .empty-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        background-color: #fff;
-        border-radius: 8px;
+    .ant-table-row {
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover > td {
+        background: #f9f9f9 !important;
+      }
+      &.ant-table-row-selected > td {
+        background-color: #e6f7ff !important;
+      }
     }
 
-    .shipping-partner-list {
-        .shipping-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 4px;
-            border-bottom: 1px dashed #f0f0f0;
+    // zebra stripe
+    .ant-table-tbody > tr:nth-child(odd) > td {
+      background-color: #fcfcfc;
+    }
+  }
 
-            &:last-child {
-                border-bottom: none;
-            }
+  .order-detail-column {
+    flex: 1; // phải hẹp hơn
+  }
 
-            .partner-info {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .partner-fee {
-                font-weight: 600;
-                color: #1890ff;
-            }
-        }
+  .empty-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background-color: #fff;
+    border-radius: 8px;
+    color: #999;
+  }
+
+  .shipping-column {
+    flex: 1; // phải (giao hàng)
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+
+    .bgh-column-header {
+      padding: 14px 18px;
+      font-weight: 600;
+      font-size: 16px;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
     }
 
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        font-size: 14px;
-
-        &.total {
-            font-size: 18px;
-            font-weight: 600;
-            color: #d4380d;
-            margin-top: 8px;
-            padding-top: 12px;
-            border-top: 1px solid #f0f0f0;
-        }
+    .bgh-column-body {
+      padding: 20px;
+      flex-grow: 1;
+      overflow-y: auto;
     }
+  }
 
-    .confirm-button {
-        width: 100%;
-        height: 48px;
-        font-size: 16px;
-        font-weight: 600;
-        margin-top: 16px;
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 14px;
+
+    &.total {
+      font-size: 18px;
+      font-weight: 600;
+      color: #d4380d;
+      margin-top: 10px;
+      padding-top: 14px;
+      border-top: 1px solid #f0f0f0;
     }
+  }
+
+  .confirm-button {
+    width: 100%;
+    height: 48px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(24, 144, 255, 0.3);
+  }
+}
+
+.scrollable-col {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.scrollable-col::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-col::-webkit-scrollbar-thumb {
+  background-color: #d9d9d9;
+  border-radius: 4px;
+}
+
+@media screen {
+  #print-delivery-invoice {
+    display: none;
+  }
+}
+/* In phiếu giao hàng */
+@media print {
+  body * {
+    visibility: hidden; /* Ẩn tất cả các element khác */
+  }
+
+  #print-delivery-invoice,
+  #print-delivery-invoice * {
+    visibility: visible !important; // chỉ hiện phiếu
+  }
+
+  #print-delivery-invoice {
+    visibility: visible !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 40px;
+    background: #fff;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 20pt;
+    line-height: 1.5;
+    color: #000;
+  }
+
+  #print-delivery-invoice h2 {
+    text-align: center;
+    margin-bottom: 16px;
+    font-size: 20pt;
+  }
+
+  #print-delivery-invoice h3 {
+    margin-top: 24px;
+    margin-bottom: 12px;
+    font-size: 20pt;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+  }
+
+  #print-delivery-invoice p {
+    margin: 4px 0;
+    font-size: 20pt;
+  }
+
+  #print-delivery-invoice .customer-info,
+  #print-delivery-invoice .shipping-info {
+    margin-bottom: 16px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+  }
+
+  #print-delivery-invoice .shipping-info {
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 2px solid #1890ff;
+    background-color: #f0f8ff;
+    border-radius: 4px;
+  }
+
+  #print-delivery-invoice .shipping-info h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #1890ff;
+    font-size: 18pt;
+    border-bottom: 1px solid #1890ff;
+  }
+
+  #print-delivery-invoice .shipping-info p {
+    margin: 6px 0;
+    font-size: 16pt;
+  }
+
+  #print-delivery-invoice table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 11pt;
+  }
+
+  #print-delivery-invoice table th,
+  #print-delivery-invoice table td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+  }
+
+  #print-delivery-invoice .payment-summary {
+    margin-top: 16px;
+    padding: 8px;
+    border-top: 2px solid #000;
+  }
+
+  #print-delivery-invoice .payment-summary p {
+    margin: 4px 0;
+    font-size: 16pt;
+    text-align: right;
+  }
+
+  #print-delivery-invoice .total {
+    font-weight: bold;
+    font-size: 20pt;
+    margin-top: 8px;
+    text-align: right;
+    color: #d32f2f;
+  }
+
+  #print-delivery-invoice .signature {
+    margin-top: 40px;
+    text-align: right;
+    font-size: 20pt;
+  }
 }
