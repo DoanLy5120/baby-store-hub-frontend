@@ -46,16 +46,32 @@ function BuyPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [api, contextHolder] = notification.useNotification();
+  const [shippingFee, setShippingFee] = useState(cartSummary.phi_van_chuyen);
 
   const totalAmount = cartSummary.tam_tinh;
   const voucherDiscount = 0;
-  const shippingFee = cartSummary.phi_van_chuyen;
   const finalTotal = cartSummary.tong_thanh_toan;
 
   const buyState = location.state || {};
   const buyProduct = buyState.product || null;
   const buyQuantity = buyState.quantity ?? 1;
   const isBuyNow = Boolean(buyProduct);
+
+  useEffect(() => {
+    if (paymentMethod === "cod") {
+      setShippingFee(40000);
+    } else {
+      // momo / vnpay
+      setShippingFee(20000);
+    }
+
+    // Cập nhật luôn tổng thanh toán
+    setCartSummary((prev) => ({
+      ...prev,
+      tong_thanh_toan:
+        prev.tam_tinh + (paymentMethod === "cod" ? 40000 : 20000),
+    }));
+  }, [paymentMethod, cartSummary.tam_tinh]);
 
   // Lấy dữ liệu giỏ hàng từ API khi component được tải
   useEffect(() => {

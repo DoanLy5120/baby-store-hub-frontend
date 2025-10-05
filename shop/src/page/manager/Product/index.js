@@ -740,7 +740,7 @@ export default function Product() {
                       },
                     ]}
                   >
-                    <Select>
+                    <Select getPopupContainer={(trigger) => trigger.parentNode}>
                       {categories.map((dm) => (
                         <Option key={dm.id} value={dm.id}>
                           {dm.tenDanhMuc}

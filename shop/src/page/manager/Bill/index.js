@@ -37,8 +37,7 @@ import { FaReplyAll } from "react-icons/fa";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
-import { useLocation } from 'react-router-dom';
-
+import { useLocation } from "react-router-dom";
 
 const { Header, Content } = Layout;
 const { Option } = Select;
@@ -50,7 +49,7 @@ export default function Bill() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const viewInvoiceId = queryParams.get('view');
+  const viewInvoiceId = queryParams.get("view");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,8 +58,19 @@ export default function Bill() {
   const [productMap, setProductMap] = useState({});
 
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   const items = Form.useWatch("items", form) || [];
+
+  useEffect(() => {
+    if (selectedInvoice) {
+      form.setFieldsValue({
+        khachHang: {
+          ...selectedInvoice.khachHang, 
+          diaChi: selectedInvoice.khachHang?.diaChi || "",
+        },
+      });
+    }
+  }, [selectedInvoice, form]);
 
   // Tính tổng tiền từ items sử dụng giá trị total từ API
   const computedTotal = items.reduce((sum, item) => {
@@ -96,12 +106,13 @@ export default function Bill() {
   //tạo ra danh sách hóa đơn đã được tìm kiếm qua mã hđ hoặc tên kh
   const searchedInvoices = filteredInvoices.filter(
     (invoice) =>
-      invoice && (
-        (invoice.invoiceCode || "")
+      invoice &&
+      ((invoice.invoiceCode || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+        (invoice.customer || "")
           .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (invoice.customer || "").toLowerCase().includes(searchTerm.toLowerCase())
-      )
+          .includes(searchTerm.toLowerCase()))
   );
 
   //click vào 1 hđ
@@ -166,7 +177,10 @@ export default function Bill() {
       const values = await form.validateFields();
 
       // Sử dụng items từ form hoặc selectedInvoice.items làm fallback
-      const currentItems = values.items && values.items.length > 0 ? values.items : selectedInvoice.items || [];
+      const currentItems =
+        values.items && values.items.length > 0
+          ? values.items
+          : selectedInvoice.items || [];
 
       if (currentItems.length === 0) {
         api.error({
@@ -181,20 +195,18 @@ export default function Bill() {
       const newIds = currentItems?.map((item) => item.id) || [];
       const xoaSanPhamIds = oldIds.filter((id) => !newIds.includes(id));
 
-      const paymentMapReverse = {
-        momo: "momo",
-        vnpay: "vnpay",
-        cod: "cod",
-        bank_transfer: "bank",
-        credit_card: "card",
-      };
-
       const payload = {
-        tongTienHang: currentItems.length > 0 ? computedTotal : (selectedInvoice?.subTotal || 0),
+        tongTienHang:
+          currentItems.length > 0
+            ? computedTotal
+            : selectedInvoice?.subTotal || 0,
         giamVoucher: selectedInvoice?.discountVoucher || 0,
         giamDiem: selectedInvoice?.discountPoint || 0,
         thueVAT: values.vat || 0,
-        tongThanhToan: currentItems.length > 0 ? computedTotal : (selectedInvoice?.totalAmount || 0),
+        tongThanhToan:
+          currentItems.length > 0
+            ? computedTotal
+            : selectedInvoice?.tongThanhToan || 0,
         phuongThucThanhToan: values.paymentMethod,
         ghiChu: values.orderNote || "",
         trangThai: values.deliveryStatus || "CHO_LAY_HANG", // Sửa từ status thành deliveryStatus
@@ -232,7 +244,10 @@ export default function Bill() {
       console.error("Lỗi cập nhật hóa đơn:", error);
       api.error({
         message: "Cập nhật hóa đơn thất bại",
-        description: error.response?.data?.message || error.message || "Vui lòng kiểm tra lại thông tin!",
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          "Vui lòng kiểm tra lại thông tin!",
         placement: "topRight",
       });
     }
@@ -259,6 +274,7 @@ export default function Bill() {
       discountPoint: parseFloat(hoaDon.giam_diem || 0),
       shippingFee: parseFloat(hoaDon.phi_van_chuyen || 0),
       totalAmount: parseFloat(hoaDon.tong_thanh_toan || 0),
+      tongThanhToan: parseFloat(hoaDon.tongThanhToan || 0),
       khachHang: {
         ten: khachHangData.hoTen || donHang.ten_nguoi_nhan || "Khách lẻ",
         soDienThoai: khachHangData.sdt || donHang.so_dien_thoai || "",
@@ -280,8 +296,7 @@ export default function Bill() {
   // ====== MAPPING CHO DETAIL (MODAL) - dùng khi gọi billApi.getById(id) ======
   const mapInvoiceDetailFromAPI = (responseData) => {
     // responseData là res.data từ API chi tiết: { success: true, data: { hoaDon, khachHang, sanPhams, vanChuyen, ... } }
-    if (!responseData || !responseData.hoaDon)
-      return null;
+    if (!responseData || !responseData.hoaDon) return null;
 
     const hoaDon = responseData.hoaDon || {};
     const khachHang = responseData.khachHang || {};
@@ -305,7 +320,7 @@ export default function Bill() {
       quantity: parseInt(sp.soLuong || 0, 10),
       unitPrice: parseFloat(sp.giaBan || 0),
       VAT: parseFloat(sp.VAT || 0),
-      discount: parseFloat(sp.flashSale || 0) *100 ,
+      discount: parseFloat(sp.flashSale || 0) * 100,
       total: parseFloat(sp.tongTien || 0),
     }));
 
@@ -373,44 +388,43 @@ export default function Bill() {
   };
 
   useEffect(() => {
-  if (viewInvoiceId) {
-    (async () => {
-      try {
-        const res = await billApi.getById(viewInvoiceId);
-        const responseData = res.data;
+    if (viewInvoiceId) {
+      (async () => {
+        try {
+          const res = await billApi.getById(viewInvoiceId);
+          const responseData = res.data;
 
-        if (!responseData || !responseData.success) {
+          if (!responseData || !responseData.success) {
+            message.error("Không thể lấy chi tiết hóa đơn");
+            return;
+          }
+
+          const mappedInvoice = mapInvoiceDetailFromAPI(responseData.data);
+          setSelectedInvoice(mappedInvoice);
+
+          form.setFieldsValue({
+            ...mappedInvoice,
+            invoiceCode: mappedInvoice.invoiceCode || "",
+            khachHang: {
+              ten: mappedInvoice.khachHang.ten,
+              soDienThoai: mappedInvoice.khachHang.soDienThoai,
+              diaChi: mappedInvoice.khachHang.diaChi,
+            },
+            items: mappedInvoice.items,
+            shippingCode: mappedInvoice.shippingCode,
+            shippingUnit: mappedInvoice.shippingUnit,
+            shippingFee: mappedInvoice.shippingFee,
+            deliveryStatus: mappedInvoice.deliveryStatus,
+            paymentMethod: mappedInvoice.paymentMethod,
+          });
+
+          setIsModalOpen(true);
+        } catch (err) {
           message.error("Không thể lấy chi tiết hóa đơn");
-          return;
         }
-
-        const mappedInvoice = mapInvoiceDetailFromAPI(responseData.data);
-        setSelectedInvoice(mappedInvoice);
-
-        form.setFieldsValue({
-          ...mappedInvoice,
-          invoiceCode: mappedInvoice.invoiceCode || "",
-          khachHang: {
-            ten: mappedInvoice.khachHang.ten,
-            soDienThoai: mappedInvoice.khachHang.soDienThoai,
-            diaChi: mappedInvoice.khachHang.diaChi,
-          },
-          items: mappedInvoice.items,
-          shippingCode: mappedInvoice.shippingCode,
-          shippingUnit: mappedInvoice.shippingUnit,
-          shippingFee: mappedInvoice.shippingFee,
-          deliveryStatus: mappedInvoice.deliveryStatus,
-          paymentMethod: mappedInvoice.paymentMethod,
-        });
-
-        setIsModalOpen(true);
-      } catch (err) {
-        message.error("Không thể lấy chi tiết hóa đơn");
-      }
-    })();
-  }
-}, [viewInvoiceId]);
-
+      })();
+    }
+  }, [viewInvoiceId]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -490,7 +504,7 @@ export default function Bill() {
           case "vnpay":
             return "Thanh toán Online";
           case "cash":
-            return "Tiền mặt"; 
+            return "Tiền mặt";
           case "cod":
             return "Ship COD";
           case "bank_transfer":
@@ -635,13 +649,13 @@ export default function Bill() {
         <h2 className="section-title">
           Chi tiết hóa đơn - {selectedInvoice?.invoiceCode || "N/A"}
         </h2>
-        
+
         {/* Thông tin khách hàng */}
         <div className="customer-info">
           <p>Khách hàng: {selectedInvoice?.khachHang?.ten || "N/A"}</p>
           <p>SĐT: {selectedInvoice?.khachHang?.soDienThoai || "N/A"}</p>
           {hasShippingInfo && selectedInvoice?.khachHang?.diaChi && (
-            <p>Địa chỉ giao hàng: {selectedInvoice.khachHang.diaChi}</p>
+            <p>Địa chỉ giao hàng: {selectedInvoice?.khachHang?.diaChi}</p>
           )}
         </div>
 
@@ -694,7 +708,7 @@ export default function Bill() {
             <p>Phí vận chuyển: {formatVND(selectedInvoice.shippingFee)}</p>
           )}
           <h3 className="total">
-            Tổng tiền: {formatVND(items.length > 0 ? computedTotal : (selectedInvoice?.totalAmount || 0))}
+            Tổng tiền: {formatVND(selectedInvoice?.totalAmount || 0)}
           </h3>
         </div>
 
@@ -798,7 +812,9 @@ export default function Bill() {
                 <EditOutlined />
                 {selectedInvoice &&
                 invoices.find((inv) => inv.id === selectedInvoice.id)
-                  ? `Chi tiết hóa đơn - ${selectedInvoice?.invoiceCode || "N/A"}`
+                  ? `Chi tiết hóa đơn - ${
+                      selectedInvoice?.invoiceCode || "N/A"
+                    }`
                   : "Tạo hóa đơn mới"}
               </Space>
             }
@@ -868,7 +884,10 @@ export default function Bill() {
                         },
                       ]}
                     >
-                      <Input disabled placeholder="Mã hóa đơn sẽ được tạo tự động" />
+                      <Input
+                        disabled
+                        placeholder="Mã hóa đơn sẽ được tạo tự động"
+                      />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
@@ -932,9 +951,9 @@ export default function Bill() {
                           label="Trạng thái giao hàng"
                           name="deliveryStatus"
                         >
-                          <Select placeholder="Chọn trạng thái">
+                          <Select placeholder="Chọn trạng thái" getPopupContainer={(trigger) => trigger.parentNode}>
                             <Option value="CHO_LAY_HANG">Chờ lấy hàng</Option>
-                            <Option value="DANG_GIAO">Đang giao</Option>
+                            <Option value="DANG_GIAO_HANG">Đang giao</Option>
                             <Option value="DA_GIAO">Đã giao</Option>
                             <Option value="HOAN_THANH">Hoàn thành</Option>
                             <Option value="DA_HUY">Đã hủy</Option>
@@ -951,10 +970,14 @@ export default function Bill() {
                     >
                       <Select
                         placeholder="Chọn phương thức"
+                        getPopupContainer={(trigger) => trigger.parentNode}
                         options={[
                           { value: "cash", label: "Tiền mặt" },
                           { value: "bank_transfer", label: "Chuyển khoản" },
                           { value: "credit_card", label: "Thẻ" },
+                          { value: "momo", label: "Momo (Online)" },
+                          { value: "vnpay", label: "VNPay (Online)" },
+                          { value: "cod", label: "Thanh toán khi nhận hàng" },
                         ]}
                       />
                     </Form.Item>
@@ -1034,9 +1057,7 @@ export default function Bill() {
                             render: (_, record, index) => {
                               const items = form.getFieldValue("items") || [];
                               const total = items[index]?.total || 0;
-                              return (
-                                <span>{formatVND(total)}</span>
-                              );
+                              return <span>{formatVND(total)}</span>;
                             },
                           },
                           {
@@ -1074,7 +1095,7 @@ export default function Bill() {
                   <Col span={12}>
                     <Form.Item label="Tổng tiền">
                       <div className="total-amount">
-                        {formatVND(items.length > 0 ? computedTotal : (selectedInvoice?.totalAmount || 0))}
+                        {formatVND(selectedInvoice?.totalAmount)}
                       </div>
                     </Form.Item>
                   </Col>

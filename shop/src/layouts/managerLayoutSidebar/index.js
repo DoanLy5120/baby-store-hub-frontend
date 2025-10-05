@@ -17,8 +17,6 @@ function ManagerLayoutSidebar({
           position: "fixed",
           top: 0,
           zIndex: 1000,
-          paddingTop: 16,
-          paddingBottom: 16,
           background: "#fff",
           borderBottom: "1px solid #eee",
         }}
@@ -31,7 +29,7 @@ function ManagerLayoutSidebar({
         className="container"
         style={{
           display: "flex",
-          marginTop: disableMarginTop ? 20 : 100,
+          marginTop: disableMarginTop ? 0 : 80,
           gap: 24,
         }}
       >

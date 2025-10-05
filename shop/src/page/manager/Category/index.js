@@ -582,7 +582,7 @@ export default function Category() {
                       },
                     ]}
                   >
-                    <Select placeholder="Chọn nhà cung cấp">
+                    <Select placeholder="Chọn nhà cung cấp" getPopupContainer={(trigger) => trigger.parentNode}>
                       {providers.map((prov) => (
                         <Option key={prov.id} value={prov.id}>
                           {prov.tenNhaCungCap}
