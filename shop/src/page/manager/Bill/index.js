@@ -276,9 +276,9 @@ export default function Bill() {
       totalAmount: parseFloat(hoaDon.tong_thanh_toan || 0),
       tongThanhToan: parseFloat(hoaDon.tongThanhToan || 0),
       khachHang: {
-        ten: khachHangData.hoTen || donHang.ten_nguoi_nhan || "Khách lẻ",
-        soDienThoai: khachHangData.sdt || donHang.so_dien_thoai || "",
-        diaChi: khachHangData.diaChi || donHang.dia_chi || "",
+        ten: donHang.ten_nguoi_nhan || "Khách lẻ",
+        soDienThoai: donHang.so_dien_thoai || "",
+        diaChi: donHang.dia_chi || "",
       },
       orderNote: donHang.ghi_chu || "",
       shippingUnit: donHang.don_vi_van_chuyen || "",
@@ -338,7 +338,7 @@ export default function Bill() {
         "unknown",
       subTotal: parseFloat(hoaDon.tongTienHang || 0),
       discountVoucher,
-      discount: discountVoucher, // alias để UI dùng selectedInvoice.discount vẫn đúng
+      discount: discountVoucher, 
       discountPoint: parseFloat(hoaDon.giamDiem || 0),
       VAT: parseFloat(hoaDon.thueVAT || 0),
       shippingFee: vanChuyen ? parseFloat(vanChuyen.phiVanChuyen || 0) : 0,
