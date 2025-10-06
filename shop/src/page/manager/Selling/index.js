@@ -1,5 +1,5 @@
 import "./Selling.scss";
-import { Tabs } from "antd";
+import { Tabs, notification, Form, Modal } from "antd";
 import { useState, useEffect } from "react";
 import { Input, Radio } from "antd";
 import { Tooltip, Select } from "antd";
@@ -19,6 +19,7 @@ const { TextArea } = Input;
 
 function Selling() {
   const [activeKey, setActiveKey] = useState("quick");
+  const [api, contextHolder] = notification.useNotification();
 
   //thanh tìm kiếm
   const { Search } = Input;
@@ -34,6 +35,10 @@ function Selling() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchValue, setSearchValue] = useState("");
   const [suggestions, setSuggestions] = useState([]);
+  const [isAddCustomerModalVisible, setIsAddCustomerModalVisible] =
+    useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
   //cấu hình kết quả thanh toán
   const { Text } = Typography;
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -151,26 +156,65 @@ function Selling() {
   };
 
   // Xử lý thêm khách hàng mới
-  const handleAddCustomer = async () => {
-    const name = prompt("Nhập tên khách hàng:");
-    const phone = prompt("Nhập số điện thoại:");
+  const handleAddCustomer = () => {
+    setIsAddCustomerModalVisible(true);
+  };
 
-    if (!name || !phone) return;
+  const handleSubmitAddCustomer = async () => {
+    if (!newCustomerName || !newCustomerPhone) {
+      api.error({
+        message: "Thiếu thông tin",
+        description: "Vui lòng nhập đầy đủ họ tên và số điện thoại!",
+        placement: "topRight",
+      });
+      return;
+    }
 
     try {
       const res = await customerApi.themKhachHang({
-        tenKhachHang: name,
-        soDienThoai: phone,
+        hoTen: newCustomerName,
+        sdt: newCustomerPhone,
       });
-      const newCustomer = res.data;
 
-      setCustomerSearch(
-        `${newCustomer.tenKhachHang} - ${newCustomer.soDienThoai}`
-      );
+      const newCustomer = {
+        id: res.data.id,
+        hoTen: res.data.hoTen,
+        sdt: res.data.sdt,
+      };
+
+      // Cập nhật danh sách khách hàng
+      setFilteredCustomers((prev) => [...prev, newCustomer]);
+      setCustomerSearch(`${newCustomer.hoTen} - ${newCustomer.sdt}`);
       setSelectedCustomer(newCustomer);
-      setFilteredCustomers([]);
+
+      // Reset form + đóng modal
+      setNewCustomerName("");
+      setNewCustomerPhone("");
+      setIsAddCustomerModalVisible(false);
+
+      // Thông báo thành công
+      api.success({
+        message: "Thêm khách hàng thành công",
+        description: `${newCustomer.hoTen} - ${newCustomer.sdt}`,
+        placement: "topRight",
+      });
     } catch (err) {
       console.error("Lỗi thêm khách hàng:", err);
+      if (err.response?.data?.errors) {
+        const errs = err.response.data.errors;
+        const desc = Object.values(errs).flat().join(" ");
+        api.error({
+          message: "Không thể thêm khách hàng",
+          description: desc,
+          placement: "topRight",
+        });
+      } else {
+        api.error({
+          message: "Không thể thêm khách hàng",
+          description: "Đã xảy ra lỗi không xác định.",
+          placement: "topRight",
+        });
+      }
     }
   };
 
@@ -791,6 +835,7 @@ function Selling() {
 
   return (
     <>
+      {contextHolder}
       <div className="container">
         <div className="selling__content">{renderContent()}</div>
         <footer className="selling__choose">
@@ -802,6 +847,31 @@ function Selling() {
           />
         </footer>
       </div>
+      <Modal
+        title="Thêm khách hàng mới"
+        open={isAddCustomerModalVisible}
+        onOk={handleSubmitAddCustomer}
+        onCancel={() => setIsAddCustomerModalVisible(false)}
+        okText="Thêm"
+        cancelText="Hủy"
+      >
+        <Form layout="vertical">
+          <Form.Item label="Tên khách hàng" required>
+            <Input
+              value={newCustomerName}
+              onChange={(e) => setNewCustomerName(e.target.value)}
+              placeholder="Nhập tên khách hàng"
+            />
+          </Form.Item>
+          <Form.Item label="Số điện thoại" required>
+            <Input
+              value={newCustomerPhone}
+              onChange={(e) => setNewCustomerPhone(e.target.value)}
+              placeholder="Nhập số điện thoại"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
       {renderPrintableInvoice()}
     </>
   );
